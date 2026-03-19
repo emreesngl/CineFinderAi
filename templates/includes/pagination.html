@@ -1,0 +1,49 @@
+{% if page_obj.paginator.num_pages > 1 %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center flex-wrap">
+
+        {# Önceki Sayfa #}
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                {# URL parametrelerini koru, type için koşul eklendi #}
+                <a class="page-link" href="?{% if request.GET.type %}&type={{ request.GET.type }}{% elif media_type %}&type={{ media_type }}{% endif %}&page={{ page_obj.previous_page_number }}{% for key, value_list in request.GET.lists %}{% if key != 'page' and key != 'type' %}{% for value in value_list %}&{{ key }}={{ value }}{% endfor %}{% endif %}{% endfor %}" aria-label="Önceki">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link" aria-hidden="true">&laquo;</span>
+            </li>
+        {% endif %}
+
+        {# Sayfa Numaraları #}
+        {% for i in paginator.page_range %}
+            {% if i == 1 or i == paginator.num_pages or i >= page_obj.number|add:"-2" and i <= page_obj.number|add:"2" %}
+                {% if page_obj.number == i %}
+                    <li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
+                {% else %}
+                    {# URL parametrelerini koru, type için koşul eklendi #}
+                    <li class="page-item"><a class="page-link" href="?{% if request.GET.type %}&type={{ request.GET.type }}{% elif media_type %}&type={{ media_type }}{% endif %}&page={{ i }}{% for key, value_list in request.GET.lists %}{% if key != 'page' and key != 'type' %}{% for value in value_list %}&{{ key }}={{ value }}{% endfor %}{% endif %}{% endfor %}">{{ i }}</a></li>
+                {% endif %}
+            {% elif i == page_obj.number|add:"-3" or i == page_obj.number|add:"3" %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+         {% endfor %}
+
+        {# Sonraki Sayfa #}
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                {# URL parametrelerini koru, type için koşul eklendi #}
+                <a class="page-link" href="?{% if request.GET.type %}&type={{ request.GET.type }}{% elif media_type %}&type={{ media_type }}{% endif %}&page={{ page_obj.next_page_number }}{% for key, value_list in request.GET.lists %}{% if key != 'page' and key != 'type' %}{% for value in value_list %}&{{ key }}={{ value }}{% endfor %}{% endif %}{% endfor %}" aria-label="Sonraki">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link" aria-hidden="true">&raquo;</span>
+            </li>
+        {% endif %}
+
+    </ul>
+</nav>
+{% endif %} 

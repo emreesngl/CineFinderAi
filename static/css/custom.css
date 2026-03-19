@@ -1,0 +1,860 @@
+/* CineFinder Ai Özel CSS Stilleri - Huly.io Inspired */
+
+/* 1. Genel Değişkenler ve Temel Ayarlar */
+:root {
+    /* Ana Tema Renkleri */
+    --primary: #e50914; /* Netflix Kırmızısı */
+    --primary-dark: #b81d24;
+    --primary-light: #f5222d;
+    --primary-ultralight: #fff1f0;
+    --secondary: #221f1f; /* Netflix Siyahı */
+    --secondary-dark: #1a1a1a;
+    --secondary-light: #2f2f2f;
+    --secondary-ultralight: #f8f8f8;
+    
+    /* Temel Renkler - Light Tema (varsayılan) */
+    --background: #141414; /* Netflix tarzı koyu arka plan */
+    --bg-panel: rgba(25, 25, 25, 0.9); /* Koyu yarı saydam panel */
+    --bg-panel-solid: #191919;
+    --text-primary: #ffffff;
+    --text-secondary: #e5e5e5;
+    --text-tertiary: #b3b3b3;
+    --border: #333333;
+    --border-focus: #444444;
+    
+    /* Nötr Gri Tonları */
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-850: #111827;
+    --gray-900: #0f172a;
+    --gray-950: #030712;
+    
+    /* UI Elemanları */
+    --success: #10b981;
+    --success-light: #18392d;
+    --warning: #f59e0b;
+    --warning-light: #3a2f18;
+    --error: #ef4444;
+    --error-light: #3d1e1e;
+    --info: #3b82f6;
+    --info-light: #1e293b;
+    
+    /* Özel UI Elemanları */
+    --card-hover: rgba(255, 255, 255, 0.1);
+    --input-focus: var(--secondary-light);
+    --focus-ring: 0 0 0 3px rgba(229, 9, 20, 0.25);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 8px -1px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
+    
+    /* Animasyon */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    
+    /* Font */
+    --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+    /* Özel Değişkenler */
+    --parlak-efekt-renk-1: rgba(229, 9, 20, 0.3);
+    --parlak-efekt-renk-2: rgba(50, 50, 50, 0.3);
+    --parlak-efekt-renk-3: rgba(236, 72, 153, 0.25);
+    --parlak-efekt-renk-4: rgba(14, 165, 233, 0.25);
+}
+
+/* Ana stil ayarları */
+html {
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    background-color: var(--background);
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+    background-color: var(--background);
+    color: var(--text-primary);
+    background-image: radial-gradient(ellipse at top, #1f1f1f 0%, #141414 100%);
+    background-attachment: fixed;
+}
+
+/* Temel elemanlar */
+.panel {
+    background-color: var(--secondary-dark);
+    border-radius: 4px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    transition: box-shadow var(--transition), transform var(--transition);
+}
+
+.panel:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+/* Navbar özelleştirme */
+.navbar {
+    padding: 0.75rem 0;
+    background-color: rgba(20, 20, 20, 0.7) !important;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background-color 0.3s ease;
+}
+
+.navbar:hover {
+    background-color: rgba(20, 20, 20, 0.85) !important;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.logo-text {
+    background: linear-gradient(90deg, #e50914, #ff5252);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    letter-spacing: 0.5px;
+}
+
+.navbar-brand i.fa-film {
+    filter: drop-shadow(0 0 5px rgba(229, 9, 20, 0.7));
+}
+
+.nav-link {
+    color: var(--text-secondary) !important;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    padding: 0.5rem 1rem !important;
+    transition: color 0.2s ease-in-out;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: var(--text-primary) !important;
+}
+
+.nav-link.active {
+    position: relative;
+}
+
+.nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 2px;
+    background-color: var(--primary);
+    border-radius: 2px;
+}
+
+/* Parlak efekt stilleri - GELİŞTİRİLMİŞ */
+.parlak-efekt:before,
+.parlak-efekt:after {
+    content: "";
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.parlak-efekt:before {
+    top: -200px;
+    right: -100px;
+    background: radial-gradient(circle, var(--parlak-efekt-renk-1), transparent 70%);
+    animation: parlak-hareket-1 20s ease-in-out infinite alternate;
+}
+
+.parlak-efekt:after {
+    bottom: -300px;
+    left: -200px;
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, var(--parlak-efekt-renk-2), transparent 70%);
+    animation: parlak-hareket-2 25s ease-in-out infinite alternate;
+}
+
+/* İlave parlak efekt elementleri */
+body:before,
+body:after {
+    content: "";
+    position: fixed;
+    z-index: -1;
+    pointer-events: none;
+    filter: blur(80px);
+    border-radius: 50%;
+    opacity: 0.5;
+}
+
+body:before {
+    top: 40%;
+    right: 30%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, var(--parlak-efekt-renk-3), transparent 70%);
+    animation: parlak-hareket-3 18s ease-in-out infinite alternate;
+}
+
+body:after {
+    top: 60%;
+    left: 40%;
+    width: 450px;
+    height: 450px;
+    background: radial-gradient(circle, var(--parlak-efekt-renk-4), transparent 70%);
+    animation: parlak-hareket-4 22s ease-in-out infinite alternate;
+}
+
+/* Parlak efekt animasyonları */
+@keyframes parlak-hareket-1 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-50px, 30px) scale(1.1); }
+    100% { transform: translate(20px, -20px) scale(0.9); }
+}
+
+@keyframes parlak-hareket-2 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(50px, -30px) scale(1.1); }
+    100% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+@keyframes parlak-hareket-3 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-30px, -30px) scale(1.15); }
+    100% { transform: translate(30px, 30px) scale(0.95); }
+}
+
+@keyframes parlak-hareket-4 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(40px, 20px) scale(1.2); }
+    100% { transform: translate(-20px, -40px) scale(0.9); }
+}
+
+/* Film kartları için grid - Daha sinematik görünüm */
+.movie-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+}
+
+@media (min-width: 768px) {
+    .movie-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .movie-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+}
+
+/* Film Kartı stilleri - Netflix tarzı */
+.movie-card {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: var(--secondary-dark);
+    transition: transform var(--transition), box-shadow var(--transition);
+    height: 100%;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+}
+
+.movie-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+    z-index: 1;
+}
+
+.movie-card__image {
+    position: relative;
+    padding-bottom: 150%; /* 2:3 oranı */
+    overflow: hidden;
+    background-color: var(--secondary-dark);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.movie-card__image::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0) 60%,
+        rgba(0, 0, 0, 0.8) 100%
+    );
+    opacity: 0.7;
+    transition: opacity var(--transition);
+}
+
+.movie-card:hover .movie-card__image::after {
+    opacity: 1;
+}
+
+.movie-card__image img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition);
+}
+
+.movie-card:hover .movie-card__image img {
+    transform: scale(1.05);
+}
+
+.movie-card__content {
+    padding: 0.75rem;
+    position: relative;
+    z-index: 2;
+    background-color: var(--secondary-dark);
+    color: var(--text-primary);
+}
+
+.movie-card__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    color: var(--text-primary);
+}
+
+.movie-card__meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+}
+
+.movie-card__rating {
+    display: flex;
+    align-items: center;
+    color: var(--warning);
+}
+
+.movie-card__rating svg,
+.movie-card__rating i {
+    margin-right: 0.25rem;
+}
+
+.movie-card__year {
+    color: var(--text-tertiary);
+}
+
+.movie-card__badge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    z-index: 3;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Footer özelleştirme */
+.footer {
+    background-color: rgba(20, 20, 20, 0.9);
+    color: var(--text-tertiary);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+.footer h5, .footer h6 {
+    color: var(--text-primary);
+}
+
+.footer a {
+    color: var(--text-tertiary);
+    transition: color 0.2s ease;
+}
+
+.footer a:hover {
+    color: var(--primary);
+}
+
+.text-primary {
+    color: var(--primary) !important;
+}
+
+/* Butonlar */
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+
+.btn-outline-primary {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary);
+    color: white;
+}
+
+/* Arama formu */
+.search-form {
+    position: relative;
+    margin: 2rem auto;
+    max-width: 600px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    color: var(--text-primary);
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 0 2px rgba(229, 9, 20, 0.25);
+}
+
+.search-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Kategori filtreleme */
+.genre-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.genre-badge {
+    background-color: var(--secondary-dark);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.genre-badge:hover, .genre-badge.active {
+    background-color: var(--primary-dark);
+    color: white;
+}
+
+/* Ana içerik alanı */
+main.container {
+    padding-top: 6rem !important;
+}
+
+/* Dropdown menü özelleştirme */
+.dropdown-menu {
+    background-color: var(--secondary-dark);
+    border-color: var(--border);
+}
+
+.dropdown-item {
+    color: var(--text-secondary);
+}
+
+.dropdown-item:hover {
+    background-color: var(--secondary-light);
+    color: var(--text-primary);
+}
+
+.dropdown-divider {
+    border-color: var(--border);
+}
+
+/* Buton ghost stilini özelleştirme */
+.btn-ghost {
+    color: var(--text-secondary);
+    background-color: transparent;
+    border: none;
+}
+
+.btn-ghost:hover {
+    color: var(--text-primary);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Profil sayfası ve kartlar için koyu tema düzenlemeleri */
+.card {
+    background-color: var(--secondary-dark);
+    border-color: var(--border);
+}
+
+.card-body {
+    background-color: var(--secondary-dark);
+    color: var(--text-primary);
+}
+
+.card-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.card-title a:hover {
+    color: var(--primary);
+}
+
+.text-muted {
+    color: var(--text-tertiary) !important;
+}
+
+/* Profil sayfası iyileştirmeleri */
+.profile-section h4,
+.profile-section h5,
+.profile-section h6 {
+    color: var(--text-primary);
+}
+
+.profile-section p {
+    color: var(--text-secondary);
+}
+
+.profile-section strong {
+    color: var(--text-primary);
+}
+
+/* Form alanları ve dropdown düzeltmeleri */
+.form-select, 
+.form-control {
+    background-color: var(--secondary-dark);
+    color: var(--text-primary);
+    border-color: var(--border);
+}
+
+.form-select:focus, 
+.form-control:focus {
+    background-color: var(--secondary-dark);
+    color: var(--text-primary);
+    border-color: var(--primary);
+}
+
+.form-select option {
+    background-color: var(--secondary-dark);
+    color: var(--text-primary);
+}
+
+/* Sayfalama kontrollerini koyu moda uyarla */
+.page-link {
+    background-color: var(--secondary-dark) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border) !important;
+}
+
+.page-link:hover {
+    background-color: var(--secondary-light) !important;
+}
+
+.page-item.disabled .page-link {
+    background-color: var(--secondary) !important;
+    color: var(--text-tertiary) !important;
+}
+
+/* Film Kartları ve Posterler için Koyu Mod İyileştirmeleri */
+.movie-poster {
+    filter: brightness(0.85) contrast(1.1);
+    transition: filter var(--transition);
+}
+
+.movie-card:hover .movie-poster {
+    filter: brightness(1) contrast(1.05);
+}
+
+/* Placeholder görsel için daha koyu arka plan */
+.placeholder-image {
+    background-color: #141414 !important;
+    border: 1px solid var(--secondary-light);
+}
+
+/* Koyu tema metin sınıfları */
+.text-gray-300 {
+    color: #d1d5db !important;
+}
+
+.text-gray-400 {
+    color: #9ca3af !important;
+}
+
+.text-gray-500 {
+    color: #6b7280 !important;
+}
+
+/* Alert ve notifikasyonlar için koyu tema düzenlemesi */
+.alert-dark {
+    background-color: var(--secondary-dark);
+    color: var(--text-secondary);
+    border-color: var(--border);
+}
+
+/* İçeriğin daha iyi okunmasını sağlayacak diğer iyileştirmeler */
+.genre-badge {
+    background-color: var(--secondary-dark);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+
+.genre-badge:hover,
+.genre-badge.active {
+    background-color: var(--primary-dark);
+    color: white;
+}
+
+/* Panel arka planı düzeltme */
+.panel {
+    background-color: var(--secondary-dark);
+}
+
+/* Diğer koyu tema düzeltmeleri - devam eden */
+
+/* Sohbet Widget Stilleri */
+.chat-widget-container {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 1050; /* Navbar'dan yüksek olabilir */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+#chat-widget-toggle {
+    /* Pozisyonu container'a göre ayarlanabilir */
+    margin-top: 0.5rem;
+}
+
+.chat-conversation-list {
+    width: 280px; /* Genişlik ayarlanabilir */
+    max-height: 400px; /* Yükseklik ayarlanabilir */
+    display: none; /* Başlangıçta gizli */
+    flex-direction: column;
+    transition: all 0.3s ease-in-out;
+}
+
+.chat-conversation-list.show {
+    display: flex;
+}
+
+.chat-list-body {
+    overflow-y: auto;
+}
+
+/* Tekil Sohbet Penceresi Stilleri (Daha sonra eklenecek) */
+.chat-window {
+    position: fixed;
+    bottom: 1rem;
+    right: /* JavaScript ile ayarlanacak */;
+    width: 300px;
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+    background-color: #212529; /* Koyu tema */
+    border: 1px solid #495057;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    z-index: 1040;
+    transition: all 0.3s ease-in-out;
+}
+
+.chat-window-header {
+    padding: 0.75rem;
+    border-bottom: 1px solid #495057;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.chat-window-body {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column-reverse; /* Mesajlar aşağıdan başlasın */
+}
+
+.chat-window-footer {
+    padding: 0.5rem;
+    border-top: 1px solid #495057;
+}
+
+.chat-window-footer textarea {
+    resize: none;
+    height: 40px; /* Yüksekliği ayarla */
+}
+
+/* Genel mesaj stilleri (conversation.html'den alınabilir/uyarlanabilir) */
+.chat-message {
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.75rem;
+    margin-bottom: 0.5rem;
+    max-width: 80%;
+    word-wrap: break-word;
+}
+
+.sent-message {
+    background-color: #0d6efd; /* Bootstrap primary */
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 0.25rem;
+}
+
+.received-message {
+    background-color: #495057; /* Gri ton */
+    color: #f8f9fa;
+    align-self: flex-start;
+    border-bottom-left-radius: 0.25rem;
+}
+
+.message-time {
+    font-size: 0.75em;
+    display: block;
+    margin-top: 0.25rem;
+}
+
+/* --- Mesajlaşma Sayfası İyileştirmeleri --- */
+
+/* Mesaj listesi için scroll */
+.message-scroll-area {
+    max-height: calc(100vh - 350px); /* Ekran yüksekliğinden diğer elemanların tahmini yüksekliğini çıkar */
+    min-height: 300px; /* Minimum yükseklik */
+    height: auto; /* Yeterince mesaj yoksa küçülebilir */
+    overflow-y: auto; /* Dikey scroll ekle */
+    padding: 1rem; 
+    display: flex; /* Mesajları alt alta dizmek için flexbox */
+    flex-direction: column; /* Dikey yön */
+    /* background-color: rgba(0, 0, 0, 0.1); */ /* Debug için arkaplan */
+}
+
+/* Scrollbar stilini iyileştir (Webkit tarayıcılar için) */
+.message-scroll-area::-webkit-scrollbar {
+    width: 8px;
+}
+
+.message-scroll-area::-webkit-scrollbar-track {
+    background: var(--secondary-dark);
+    border-radius: 4px;
+}
+
+.message-scroll-area::-webkit-scrollbar-thumb {
+    background-color: var(--secondary-light);
+    border-radius: 4px;
+    border: 2px solid var(--secondary-dark); 
+}
+
+.message-scroll-area::-webkit-scrollbar-thumb:hover {
+    background-color: var(--border);
+}
+
+/* Gönderilen ve Alınan Mesaj Balonları Stilleri */
+/* (Bu stiller zaten vardı, custom.css'in sonunda olabilir, gerekirse düzenlenir) */
+.chat-message {
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    max-width: 75%;
+    word-wrap: break-word;
+}
+
+.sent-message {
+    background-color: var(--primary); /* Gönderen için ana renk */
+    color: white;
+    align-self: flex-end; /* Sağa yasla */
+    border-bottom-right-radius: 0; /* Küçük köşe efekti */
+    margin-left: auto; /* Sağa itmek için */
+}
+
+.received-message {
+    background-color: var(--secondary-light); /* Alan için ikincil renk */
+    color: var(--text-primary);
+    align-self: flex-start; /* Sola yasla */
+    border-bottom-left-radius: 0; /* Küçük köşe efekti */
+    margin-right: auto; /* Sola itmek için */
+}
+
+.chat-message .message-time {
+    display: block;
+    font-size: 0.7em;
+    margin-top: 0.3rem;
+    text-align: right;
+    opacity: 0.7;
+}
+
+.sent-message .message-time {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.received-message .message-time {
+    color: var(--text-tertiary);
+}
+
+/* Mesaj gönderme formu */
+#message-form textarea {
+    background-color: var(--secondary-light);
+    color: var(--text-primary);
+    border-color: var(--border);
+    resize: none; /* Yeniden boyutlandırmayı kapat */
+    min-height: 40px; /* Tek satır için yeterli yükseklik */
+    max-height: 120px; /* Çok uzamasın */
+}
+
+#message-form textarea:focus {
+    background-color: var(--secondary-light);
+    color: var(--text-primary);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb, 229, 9, 20), 0.25); 
+}
+
+#message-form .btn-primary {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* --- Mesajlaşma Sayfası İyileştirmeleri Sonu --- */ 

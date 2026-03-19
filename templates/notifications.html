@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Bildirimler{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notification-item {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #333;
+        transition: background-color 0.2s ease;
+        text-decoration: none; /* Link alt çizgisini kaldır */
+        color: #ddd; /* Varsayılan metin rengi */
+    }
+    .notification-item:hover {
+        background-color: #2a2a2a;
+        color: #fff; /* Hover rengi */
+    }
+    .notification-icon img {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        margin-right: 15px;
+        object-fit: cover;
+    }
+    .notification-content {
+        flex-grow: 1;
+    }
+    .notification-message {
+        margin-bottom: 5px;
+        font-size: 0.95rem; /* Biraz daha büyük font */
+        line-height: 1.4;
+    }
+    .notification-time {
+        font-size: 0.8rem;
+        color: #aaa;
+    }
+    .no-notifications {
+        text-align: center;
+        color: #aaa;
+        padding: 30px;
+    }
+    /* Okunmamış bildirimler için (artık kullanılmıyor ama stil kalabilir) */
+    /* .notification-item.unread {
+        background-color: #303030; 
+        font-weight: bold;
+    } */
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Bildirimler</h1>
+
+    <div class="notification-list bg-secondary-dark rounded p-3">
+        {% if notifications %}
+            {% for notification in notifications %}
+                <a href="{{ notification.link|default:'#' }}" class="notification-item d-block">
+                    <div class="notification-icon me-3">
+                        <img src="{{ notification.sender_profile_pic_url }}" 
+                             alt="{{ notification.sender_username|default:'Profil' }} avatar"
+                             class="rounded-circle"
+                             width="40" height="40"
+                             style="object-fit: cover;">
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-message">
+                            {% if notification.sender_username and notification.sender_username != 'Sistem' %}
+                                <strong>{{ notification.sender_username }}</strong>
+                            {% endif %}
+                            {{ notification.message }}
+                        </div>
+                        <div class="notification-time">
+                            {{ notification.created_at|naturaltime }}
+                        </div>
+                    </div>
+                </a>
+            {% endfor %}
+            
+             {# Sayfalama (ListView kullanıldığı için paginator context'te olmalı) #}
+             {% include 'includes/pagination.html' %}
+             
+        {% else %}
+            <p class="no-notifications">Okunacak yeni bildiriminiz yok.</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %} 

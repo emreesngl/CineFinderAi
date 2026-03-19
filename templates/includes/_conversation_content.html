@@ -1,0 +1,42 @@
+{% load static %}
+{% load humanize %}
+
+{# Bu partial template, AJAX ile inbox'a yüklenir #}
+
+{# Üst Bar: Kullanıcı Adı ve Profil Resmi (Profile link eklendi) #}
+<div class="conversation-header d-flex align-items-center p-3 border-bottom">
+    <a href="{% url 'user_profile' username=other_user.username %}" class="text-decoration-none d-flex align-items-center text-white">
+        <img src="{{ other_user_pic_url }}" 
+             alt="{{ other_user.username }}" 
+             class="rounded-circle me-3" 
+             width="40" 
+             height="40" 
+             style="object-fit: cover;">
+        <h5 class="mb-0 fw-bold">{{ other_user.username }}</h5>
+    </a>
+    {# "ile mesajlaşma" kaldırıldı #}
+</div>
+
+{# Mesaj Alanı #}
+<div class="messages flex-grow-1 p-3" style="overflow-y: auto;">
+    {% for message in messages %}
+        <div class="message {% if message.sender == request.user %}user-message{% else %}other-message{% endif %}">
+            <div class="message-bubble">{{ message.text|linebreaksbr }}</div>
+            {# <span class="message-time">{{ message.sent_at|naturaltime }}</span> #} {# Opsiyonel: Zaman damgası #}
+        </div>
+    {% empty %}
+        <p class="text-center text-muted mt-5">Henüz hiç mesajınız yok. İlk mesajı gönderin!</p>
+    {% endfor %}
+</div>
+
+{# Mesaj Yazma Alanı #}
+<div class="message-input-area p-3 border-top">
+    <form method="post" action="{% url 'conversation' username=other_user.username %}" id="message-form" class="d-flex">
+        {% csrf_token %}
+        <textarea name="text" class="form-control me-2 message-input-field" placeholder="Mesajınızı yazın..." required></textarea>
+        <button type="submit" class="btn btn-primary send-message-btn">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </form>
+</div>
+

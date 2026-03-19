@@ -1,0 +1,1092 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Filmler ve Diziler | CineFinder AI{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-md-5">
+    {# Başlık, Arama ve Tip Butonları Satırı - Tekrar düzenlendi #}
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        {# Başlık (Sol) #}
+        <h1 class="h2 mb-0 text-white me-auto"> {# me-auto ile sağındaki elemanları iter #}
+            {% if media_type == 'movie' %}Filmler{% else %}Diziler{% endif %}
+            {% if list_type == 'popular' %}<span class="text-danger small">• Popüler</span>{% endif %}
+            {% if list_type == 'top_rated' %}<span class="text-danger small">• En İyi</span>{% endif %}
+            {% if list_type == 'upcoming' %}<span class="text-danger small">• Yakında</span>{% endif %}
+            {% if list_type == 'now_playing' %}<span class="text-danger small">• Vizyonda</span>{% endif %}
+            {% if is_search and request.GET.q %}<span class="text-muted small fst-italic ms-2">- "{{ request.GET.q }}" aranıyor</span>{% endif %}
+        </h1>
+        
+        {# Katalog Arama Formu (Ortada) #}
+        <div class="mx-2" style="max-width: 800px;"> {# max-width ayarlanabilir #}
+            <form method="get" action="{% url 'catalog' %}" class="w-100" id="search-form">
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary" 
+                           name="q" id="search-input" placeholder="Katalogda ara..." value="{{ request.GET.q|default:'' }}">
+                    <input type="hidden" name="type" value="{{ media_type }}">
+                    <button class="btn btn-outline-primary btn-sm" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {# Film/Dizi Butonları (Sağ) #}
+        <div class="d-flex gap-2"> {# ms-md-auto kaldırıldı #}
+            <a href="?type=movie" class="btn {% if media_type == 'movie' %}btn-primary{% else %}btn-outline-light btn-sm{% endif %}">Filmler</a>
+            <a href="?type=tv" class="btn {% if media_type == 'tv' %}btn-primary{% else %}btn-outline-light btn-sm{% endif %}">Diziler</a>
+        </div>
+    </div>
+    
+    {# Başlığın Altındaki Arama Formu Satırı Kaldırıldı #}
+    {# <div class="row mb-4"> ... </div> #}
+
+    <div class="row">
+        <!-- Sol Taraf - Filtreler -->
+        <div class="col-lg-3 mb-4">
+            <div class="panel p-3 mb-4 bg-dark border-secondary">
+                <h5 class="text-white mb-3">
+                    <i class="fas fa-filter me-2"></i>Filtreleme Ölçütleri
+                    <button id="collapse-filters" class="btn btn-sm btn-outline-light float-end">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                </h5>
+                
+                <div id="filters-content">
+                    <!-- Sıralama -->
+                    <div class="filter-section mb-4">
+                        <h6 class="text-white mb-2">Sonuç Sıralama Ölçütleri</h6>
+                        <select id="sort_by" class="form-select form-select-sm bg-dark text-light border-secondary">
+                            <option value="popularity.desc" {% if selected_sort == 'popularity.desc' %}selected{% endif %}>Azalan Popülerlik</option>
+                            <option value="popularity.asc" {% if selected_sort == 'popularity.asc' %}selected{% endif %}>Artan Popülerlik</option>
+                            <option value="vote_average.desc" {% if selected_sort == 'vote_average.desc' %}selected{% endif %}>Azalan Oylama</option>
+                            <option value="vote_average.asc" {% if selected_sort == 'vote_average.asc' %}selected{% endif %}>Artan Oylama</option>
+                            {% if media_type == 'movie' %}
+                            <option value="release_date.desc" {% if selected_sort == 'release_date.desc' %}selected{% endif %}>İlk Yayın Tarihi Göre Azalt</option>
+                            <option value="release_date.asc" {% if selected_sort == 'release_date.asc' %}selected{% endif %}>İlk Yayın Tarihi Göre Azalt</option>
+                            <option value="revenue.desc" {% if selected_sort == 'revenue.desc' %}selected{% endif %}>Azalan Hasılat</option>
+                            <option value="revenue.asc" {% if selected_sort == 'revenue.asc' %}selected{% endif %}>Artan Hasılat</option>
+                            <option value="runtime.desc" {% if selected_sort == 'runtime.desc' %}selected{% endif %}>Azalan Süre</option>
+                            <option value="runtime.asc" {% if selected_sort == 'runtime.asc' %}selected{% endif %}>Artan Süre</option>
+                            {% else %}
+                            <option value="first_air_date.desc" {% if selected_sort == 'first_air_date.desc' %}selected{% endif %}>İlk Yayın Tarihi Göre Azalt</option>
+                            <option value="first_air_date.asc" {% if selected_sort == 'first_air_date.asc' %}selected{% endif %}>İlk Yayın Tarihi Göre Azalt</option>
+                            {% endif %}
+                            <option value="original_title.asc" {% if selected_sort == 'original_title.asc' %}selected{% endif %}>İsim (A-Z)</option>
+                            <option value="original_title.desc" {% if selected_sort == 'original_title.desc' %}selected{% endif %}>İsim (Z-A)</option>
+                        </select>
+                    </div>
+
+                    <!-- Gösterme Ölçütü -->
+                    <div class="filter-section mb-4">
+                        <h6 class="text-white mb-2">Gösterme Ölçütü</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="show_me" id="show_everything" value="everything" {% if show_me == 'everything' or not show_me %}checked{% endif %}>
+                            <label class="form-check-label text-light" for="show_everything">Her şey</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="show_me" id="show_not_seen" value="not_seen" {% if show_me == 'not_seen' %}checked{% endif %}>
+                            <label class="form-check-label text-light" for="show_not_seen">Görmediğim {% if media_type == 'movie' %}Filmler{% else %}Diziler{% endif %}</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="show_me" id="show_seen" value="seen" {% if show_me == 'seen' %}checked{% endif %}>
+                            <label class="form-check-label text-light" for="show_seen">Gördüğüm {% if media_type == 'movie' %}Filmler{% else %}Diziler{% endif %}</label>
+                        </div>
+                    </div>
+
+                    <!-- Geçerlilik -->
+                    <div class="filter-section mb-4">
+                        <h6 class="text-white mb-2">Geçerlilik</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="include_adult" value="1">
+                            <label class="form-check-label text-light" for="include_adult">İlk yayın tarihini ara</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="search_all_releases" value="1">
+                            <label class="form-check-label text-light" for="search_all_releases">Tüm gösterim tarihlerini arasın</label>
+                        </div>
+                    </div>
+
+                    <!-- İlk Gösterim Tarihleri -->
+                    <div class="filter-section mb-4">
+                        <h6 class="text-white mb-2">İlk Gösterim Tarihleri</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="date" id="release_date_gte" 
+                                       class="form-control form-control-sm bg-dark text-light border-secondary" 
+                                       value="{{ release_date_gte|default:'' }}">
+                            </div>
+                            <div class="col-6">
+                                <input type="date" id="release_date_lte" 
+                                       class="form-control form-control-sm bg-dark text-light border-secondary" 
+                                       value="{{ release_date_lte|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Türler -->
+                    <div class="filter-section mb-4">
+                        <h6 class="text-white mb-2">Türler</h6>
+                        <div class="genre-tags">
+                            {% for genre in genres %}
+                            <span class="genre-tag {% if genre.id|stringformat:'s' in selected_genres %}selected{% endif %}" 
+                                  data-genre-id="{{ genre.id }}">
+                                {{ genre.name }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Dil -->
+                    <div class="filter-section mb-4">
+                        <h6 class="text-white mb-2">Dil</h6>
+                        <select id="with_original_language" class="form-select form-select-sm bg-dark text-light border-secondary">
+                            <option value="">Hiçbiri Seçilmedi</option>
+                            <option value="tr" {% if with_original_language == 'tr' %}selected{% endif %}>Türkçe</option>
+                            <option value="en" {% if with_original_language == 'en' %}selected{% endif %}>İngilizce</option>
+                            <option value="fr" {% if with_original_language == 'fr' %}selected{% endif %}>Fransızca</option>
+                            <option value="es" {% if with_original_language == 'es' %}selected{% endif %}>İspanyolca</option>
+                            <option value="de" {% if with_original_language == 'de' %}selected{% endif %}>Almanca</option>
+                            <option value="it" {% if with_original_language == 'it' %}selected{% endif %}>İtalyanca</option>
+                            <option value="ja" {% if with_original_language == 'ja' %}selected{% endif %}>Japonca</option>
+                            <option value="ko" {% if with_original_language == 'ko' %}selected{% endif %}>Korece</option>
+                            <option value="zh" {% if with_original_language == 'zh' %}selected{% endif %}>Çince (Mandarin)</option>
+                            <option value="hi" {% if with_original_language == 'hi' %}selected{% endif %}>Hintçe</option>
+                            <option value="ar" {% if with_original_language == 'ar' %}selected{% endif %}>Arapça</option>
+                            <option value="ru" {% if with_original_language == 'ru' %}selected{% endif %}>Rusça</option>
+                            <option value="pt" {% if with_original_language == 'pt' %}selected{% endif %}>Portekizce</option>
+                            <option value="nl" {% if with_original_language == 'nl' %}selected{% endif %}>Hollandaca</option>
+                            <option value="sv" {% if with_original_language == 'sv' %}selected{% endif %}>İsveççe</option>
+                            <option value="no" {% if with_original_language == 'no' %}selected{% endif %}>Norveççe</option>
+                            <option value="da" {% if with_original_language == 'da' %}selected{% endif %}>Danca</option>
+                            <option value="fi" {% if with_original_language == 'fi' %}selected{% endif %}>Fince</option>
+                            <option value="pl" {% if with_original_language == 'pl' %}selected{% endif %}>Lehçe</option>
+                            <option value="cs" {% if with_original_language == 'cs' %}selected{% endif %}>Çekçe</option>
+                            <option value="hu" {% if with_original_language == 'hu' %}selected{% endif %}>Macarca</option>
+                            <option value="ro" {% if with_original_language == 'ro' %}selected{% endif %}>Rumence</option>
+                            <option value="bg" {% if with_original_language == 'bg' %}selected{% endif %}>Bulgarca</option>
+                            <option value="hr" {% if with_original_language == 'hr' %}selected{% endif %}>Hırvatça</option>
+                            <option value="sr" {% if with_original_language == 'sr' %}selected{% endif %}>Sırpça</option>
+                            <option value="sk" {% if with_original_language == 'sk' %}selected{% endif %}>Slovakça</option>
+                            <option value="sl" {% if with_original_language == 'sl' %}selected{% endif %}>Slovence</option>
+                            <option value="et" {% if with_original_language == 'et' %}selected{% endif %}>Estonca</option>
+                            <option value="lv" {% if with_original_language == 'lv' %}selected{% endif %}>Letonca</option>
+                            <option value="lt" {% if with_original_language == 'lt' %}selected{% endif %}>Litvanca</option>
+                            <option value="el" {% if with_original_language == 'el' %}selected{% endif %}>Yunanca</option>
+                            <option value="he" {% if with_original_language == 'he' %}selected{% endif %}>İbranice</option>
+                            <option value="th" {% if with_original_language == 'th' %}selected{% endif %}>Tayca</option>
+                            <option value="vi" {% if with_original_language == 'vi' %}selected{% endif %}>Vietnamca</option>
+                            <option value="id" {% if with_original_language == 'id' %}selected{% endif %}>Endonezce</option>
+                            <option value="ms" {% if with_original_language == 'ms' %}selected{% endif %}>Malayca</option>
+                            <option value="tl" {% if with_original_language == 'tl' %}selected{% endif %}>Filipince</option>
+                            <option value="fa" {% if with_original_language == 'fa' %}selected{% endif %}>Farsça</option>
+                            <option value="ur" {% if with_original_language == 'ur' %}selected{% endif %}>Urduca</option>
+                            <option value="bn" {% if with_original_language == 'bn' %}selected{% endif %}>Bengalce</option>
+                            <option value="ta" {% if with_original_language == 'ta' %}selected{% endif %}>Tamilce</option>
+                            <option value="te" {% if with_original_language == 'te' %}selected{% endif %}>Telugu</option>
+                            <option value="ml" {% if with_original_language == 'ml' %}selected{% endif %}>Malayalam</option>
+                            <option value="kn" {% if with_original_language == 'kn' %}selected{% endif %}>Kannada</option>
+                            <option value="gu" {% if with_original_language == 'gu' %}selected{% endif %}>Gujarati</option>
+                            <option value="pa" {% if with_original_language == 'pa' %}selected{% endif %}>Pencapça</option>
+                            <option value="mr" {% if with_original_language == 'mr' %}selected{% endif %}>Marathi</option>
+                            <option value="ne" {% if with_original_language == 'ne' %}selected{% endif %}>Nepalce</option>
+                            <option value="si" {% if with_original_language == 'si' %}selected{% endif %}>Sinhala</option>
+                            <option value="my" {% if with_original_language == 'my' %}selected{% endif %}>Birmanca</option>
+                            <option value="km" {% if with_original_language == 'km' %}selected{% endif %}>Khmer</option>
+                            <option value="lo" {% if with_original_language == 'lo' %}selected{% endif %}>Lao</option>
+                            <option value="ka" {% if with_original_language == 'ka' %}selected{% endif %}>Gürcüce</option>
+                            <option value="hy" {% if with_original_language == 'hy' %}selected{% endif %}>Ermenice</option>
+                            <option value="az" {% if with_original_language == 'az' %}selected{% endif %}>Azerice</option>
+                            <option value="kk" {% if with_original_language == 'kk' %}selected{% endif %}>Kazakça</option>
+                            <option value="ky" {% if with_original_language == 'ky' %}selected{% endif %}>Kırgızca</option>
+                            <option value="uz" {% if with_original_language == 'uz' %}selected{% endif %}>Özbekçe</option>
+                            <option value="tk" {% if with_original_language == 'tk' %}selected{% endif %}>Türkmence</option>
+                            <option value="tg" {% if with_original_language == 'tg' %}selected{% endif %}>Tacikçe</option>
+                            <option value="mn" {% if with_original_language == 'mn' %}selected{% endif %}>Moğolca</option>
+                            <option value="bo" {% if with_original_language == 'bo' %}selected{% endif %}>Tibetçe</option>
+                            <option value="dz" {% if with_original_language == 'dz' %}selected{% endif %}>Dzongkha</option>
+                            <option value="am" {% if with_original_language == 'am' %}selected{% endif %}>Amharca</option>
+                            <option value="sw" {% if with_original_language == 'sw' %}selected{% endif %}>Swahili</option>
+                            <option value="zu" {% if with_original_language == 'zu' %}selected{% endif %}>Zulu</option>
+                            <option value="af" {% if with_original_language == 'af' %}selected{% endif %}>Afrikaans</option>
+                            <option value="is" {% if with_original_language == 'is' %}selected{% endif %}>İzlandaca</option>
+                            <option value="fo" {% if with_original_language == 'fo' %}selected{% endif %}>Faroe Dili</option>
+                            <option value="mt" {% if with_original_language == 'mt' %}selected{% endif %}>Maltaca</option>
+                            <option value="cy" {% if with_original_language == 'cy' %}selected{% endif %}>Galce</option>
+                            <option value="ga" {% if with_original_language == 'ga' %}selected{% endif %}>İrlandaca</option>
+                            <option value="gd" {% if with_original_language == 'gd' %}selected{% endif %}>İskoç Galcesi</option>
+                            <option value="eu" {% if with_original_language == 'eu' %}selected{% endif %}>Baskça</option>
+                            <option value="ca" {% if with_original_language == 'ca' %}selected{% endif %}>Katalanca</option>
+                            <option value="gl" {% if with_original_language == 'gl' %}selected{% endif %}>Galiçyaca</option>
+                            <option value="ast" {% if with_original_language == 'ast' %}selected{% endif %}>Asturyaca</option>
+                            <option value="an" {% if with_original_language == 'an' %}selected{% endif %}>Aragonca</option>
+                            <option value="oc" {% if with_original_language == 'oc' %}selected{% endif %}>Oksitanca</option>
+                            <option value="co" {% if with_original_language == 'co' %}selected{% endif %}>Korsikaca</option>
+                            <option value="sc" {% if with_original_language == 'sc' %}selected{% endif %}>Sardinyaca</option>
+                            <option value="rm" {% if with_original_language == 'rm' %}selected{% endif %}>Romanşça</option>
+                            <option value="fur" {% if with_original_language == 'fur' %}selected{% endif %}>Friulian</option>
+                            <option value="lad" {% if with_original_language == 'lad' %}selected{% endif %}>Ladino</option>
+                            <option value="yi" {% if with_original_language == 'yi' %}selected{% endif %}>Yidiş</option>
+                            <option value="la" {% if with_original_language == 'la' %}selected{% endif %}>Latince</option>
+                            <option value="grc" {% if with_original_language == 'grc' %}selected{% endif %}>Antik Yunanca</option>
+                            <option value="sa" {% if with_original_language == 'sa' %}selected{% endif %}>Sanskritçe</option>
+                            <option value="pi" {% if with_original_language == 'pi' %}selected{% endif %}>Pali</option>
+                            <option value="eo" {% if with_original_language == 'eo' %}selected{% endif %}>Esperanto</option>
+                            <option value="ia" {% if with_original_language == 'ia' %}selected{% endif %}>Interlingua</option>
+                            <option value="ie" {% if with_original_language == 'ie' %}selected{% endif %}>Interlingue</option>
+                            <option value="vo" {% if with_original_language == 'vo' %}selected{% endif %}>Volapük</option>
+                            <option value="jbo" {% if with_original_language == 'jbo' %}selected{% endif %}>Lojban</option>
+                            <option value="tlh" {% if with_original_language == 'tlh' %}selected{% endif %}>Klingon</option>
+                            <option value="xx" {% if with_original_language == 'xx' %}selected{% endif %}>Dil Yok</option>
+                        </select>
+                    </div>
+
+                    <!-- Kullanıcı Puanı -->
+                    <div class="filter-section mb-4">
+                        <h6 class="text-white mb-2">Kullanıcı Puanı</h6>
+                        <div class="range-slider">
+                            <input type="range" id="vote_average_range" min="0" max="10" step="0.5" 
+                                   value="0" class="form-range">
+                            <div class="range-values text-light small">
+                                <span id="vote_min">0</span> - <span id="vote_max">10</span>
+                            </div>
+                        </div>
+                        <div class="row g-2 mt-2">
+                            <div class="col-6">
+                                <input type="number" min="0" max="10" step="0.1" id="vote_average_gte" 
+                                       class="form-control form-control-sm bg-dark text-light border-secondary" 
+                                       placeholder="Min Puan" 
+                                       value="{{ vote_average_gte|default:'' }}">
+                            </div>
+                            <div class="col-6">
+                                <input type="number" min="0" max="10" step="0.1" id="vote_average_lte" 
+                                       class="form-control form-control-sm bg-dark text-light border-secondary" 
+                                       placeholder="Max Puan" 
+                                       value="{{ vote_average_lte|default:'' }}">
+                            </div>
+                        </div>
+                        
+                        <h6 class="text-white mt-3 mb-2">En Az Kullanıcı Oyu</h6>
+                        <div class="range-slider">
+                            <input type="range" id="vote_count_range" min="0" max="10000" step="100" 
+                                   value="{{ vote_count_gte|default:'0' }}" class="form-range">
+                            <div class="range-values text-light small">
+                                <span>0</span> - <span id="vote_count_value">{{ vote_count_gte|default:'0' }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Süre (Sadece Filmler için) -->
+                    {% if media_type == 'movie' %}
+                    <div class="filter-section mb-4">
+                        <h6 class="text-white mb-2">Süre</h6>
+                        <div class="range-slider">
+                            <input type="range" id="runtime_min_range" min="0" max="400" 
+                                   value="{{ runtime_gte|default:'0' }}" class="form-range">
+                            <div class="range-values text-light small">
+                                <span>Min: <span id="runtime_min_value">{{ runtime_gte|default:'0' }}</span> dk</span>
+                            </div>
+                        </div>
+                        <div class="range-slider mt-3">
+                            <input type="range" id="runtime_max_range" min="0" max="400" 
+                                   value="{{ runtime_lte|default:'400' }}" class="form-range">
+                            <div class="range-values text-light small">
+                                <span>Max: <span id="runtime_max_value">{{ runtime_lte|default:'400' }}</span> dk</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Platformlar -->
+                    <div class="filter-section mb-4">
+                        <h6 class="text-white mb-2">Platformlar</h6>
+                        <div class="provider-grid">
+                            {% for provider in providers %}
+                            <div class="provider-item {% if provider.provider_id|stringformat:'s' in selected_providers %}selected{% endif %}" 
+                                 data-provider-id="{{ provider.provider_id }}" 
+                                 title="{{ provider.provider_name }}">
+                                {% if provider.logo_url %}
+                                    <img src="{{ provider.logo_url }}" alt="{{ provider.provider_name }}" class="provider-logo">
+                                {% else %}
+                                    <div class="provider-logo-placeholder d-flex align-items-center justify-content-center bg-secondary text-white">
+                                        {{ provider.provider_name|slice:":2"|upper }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Anahtar Kelimeler -->
+                    <div class="filter-section mb-4">
+                        <h6 class="text-white mb-2">Anahtar Kelimeler</h6>
+                        <input type="text" id="keywords_input" 
+                               class="form-control form-control-sm bg-dark text-light border-secondary" 
+                               placeholder="Etiket göre filtrele...">
+                        <div id="selected_keywords" class="mt-2"></div>
+                    </div>
+                </div>
+
+                <!-- Dinamik Bul Butonu -->
+                <div id="search-button-container" style="display: none;">
+                    <button id="apply-search" class="btn btn-primary w-100 mt-3">
+                        <i class="fas fa-search me-2"></i>Bul
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sağ Taraf - Film Listesi -->
+        <div class="col-lg-9">
+            <!-- Film Listesi -->
+            <div id="movie-list-container">
+{% if media_list %}
+            <div class="movie-grid">
+        {% for media in media_list %}
+                <div class="movie-card">
+                    <a href="{% url 'media_detail' media_type=media.media_type media_id=media.id %}">
+                        <div class="movie-card__image">
+                     {% if media.poster_url %}
+                                <img src="{{ media.poster_url }}" alt="{{ media.title|default:'' }}" loading="lazy" class="movie-poster">
+                     {% else %}
+                                <div class="placeholder-image d-flex align-items-center justify-content-center h-100 bg-dark">
+                                    <i class="fas fa-film fa-3x text-secondary"></i>
+                         </div>
+                     {% endif %}
+                            
+                            {% if media.media_type == 'tv' %}
+                                <div class="movie-card__badge">Dizi</div>
+                            {% endif %}
+                        </div>
+                        <div class="movie-card__content">
+                            <h3 class="movie-card__title text-white">
+                              {% if media.title %}
+                                  {{ media.title }}
+                              {% elif media.name %}
+                                  {{ media.name }}
+                              {% else %}
+                                    İsimsiz
+                              {% endif %}
+                            </h3>
+                            <div class="movie-card__meta">
+                                <div class="movie-card__rating">
+                                    <div class="rating-circle" data-rating="{{ media.vote_average|floatformat:1 }}">
+                                        <svg class="rating-svg" viewBox="0 0 36 36">
+                                            <path class="rating-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+                                            <path class="rating-fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+                                        </svg>
+                                        <div class="rating-text">{{ media.vote_average|floatformat:1 }}</div>
+                                    </div>
+                                </div>
+                                <div class="movie-card__year-runtime">
+                                    <div class="movie-card__year text-gray-400">
+                                 {% if media.media_type == 'movie' %}
+                                        {{ media.release_date|slice:":4"|default:"?" }}
+                                 {% else %}
+                                        {{ media.first_air_date|slice:":4"|default:"?" }}
+                         {% endif %}
+                     </div>
+                                    {% if media.media_type == 'movie' and media.runtime %}
+                                    <div class="movie-card__runtime text-gray-400">
+                                        {{ media.runtime }}dk
+                                    </div>
+                                    {% endif %}
+                                </div>
+                 </div>
+                        </div>
+                    </a>
+            </div>
+        {% endfor %}
+    </div>
+
+            <!-- Sayfalama -->
+            {% if is_paginated %}
+            <nav aria-label="Sayfalama" class="mt-5">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link bg-dark text-light border-secondary" href="?type={{ media_type }}&page=1{% if list_type != 'all' %}&list_type={{ list_type }}{% endif %}{% for genre_id in selected_genres %}&genre={{ genre_id }}{% endfor %}{% if selected_country %}&country={{ selected_country }}{% endif %}{% if year_gte %}&year_gte={{ year_gte }}{% endif %}{% if year_lte %}&year_lte={{ year_lte }}{% endif %}{% if vote_average_gte %}&vote_average_gte={{ vote_average_gte }}{% endif %}{% if vote_average_lte %}&vote_average_lte={{ vote_average_lte }}{% endif %}{% if vote_count_gte %}&vote_count_gte={{ vote_count_gte }}{% endif %}{% if runtime_gte %}&runtime_gte={{ runtime_gte }}{% endif %}{% if runtime_lte %}&runtime_lte={{ runtime_lte }}{% endif %}{% if with_status %}&with_status={{ with_status }}{% endif %}{% if with_networks %}&with_networks={{ with_networks }}{% endif %}{% if with_original_language %}&with_original_language={{ with_original_language }}{% endif %}&sort_by={{ selected_sort }}" aria-label="İlk">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link bg-dark text-light border-secondary" href="?type={{ media_type }}&page={{ page_obj.previous_page_number }}{% if list_type != 'all' %}&list_type={{ list_type }}{% endif %}{% for genre_id in selected_genres %}&genre={{ genre_id }}{% endfor %}{% if selected_country %}&country={{ selected_country }}{% endif %}{% if year_gte %}&year_gte={{ year_gte }}{% endif %}{% if year_lte %}&year_lte={{ year_lte }}{% endif %}{% if vote_average_gte %}&vote_average_gte={{ vote_average_gte }}{% endif %}{% if vote_average_lte %}&vote_average_lte={{ vote_average_lte }}{% endif %}{% if vote_count_gte %}&vote_count_gte={{ vote_count_gte }}{% endif %}{% if runtime_gte %}&runtime_gte={{ runtime_gte }}{% endif %}{% if runtime_lte %}&runtime_lte={{ runtime_lte }}{% endif %}{% if with_status %}&with_status={{ with_status }}{% endif %}{% if with_networks %}&with_networks={{ with_networks }}{% endif %}{% if with_original_language %}&with_original_language={{ with_original_language }}{% endif %}&sort_by={{ selected_sort }}" aria-label="Önceki">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item disabled">
+                        <span class="page-link bg-dark text-light border-secondary">
+                            {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link bg-dark text-light border-secondary" href="?type={{ media_type }}&page={{ page_obj.next_page_number }}{% if list_type != 'all' %}&list_type={{ list_type }}{% endif %}{% for genre_id in selected_genres %}&genre={{ genre_id }}{% endfor %}{% if selected_country %}&country={{ selected_country }}{% endif %}{% if year_gte %}&year_gte={{ year_gte }}{% endif %}{% if year_lte %}&year_lte={{ year_lte }}{% endif %}{% if vote_average_gte %}&vote_average_gte={{ vote_average_gte }}{% endif %}{% if vote_average_lte %}&vote_average_lte={{ vote_average_lte }}{% endif %}{% if vote_count_gte %}&vote_count_gte={{ vote_count_gte }}{% endif %}{% if runtime_gte %}&runtime_gte={{ runtime_gte }}{% endif %}{% if runtime_lte %}&runtime_lte={{ runtime_lte }}{% endif %}{% if with_status %}&with_status={{ with_status }}{% endif %}{% if with_networks %}&with_networks={{ with_networks }}{% endif %}{% if with_original_language %}&with_original_language={{ with_original_language }}{% endif %}&sort_by={{ selected_sort }}" aria-label="Sonraki">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link bg-dark text-light border-secondary" href="?type={{ media_type }}&page={{ page_obj.paginator.num_pages }}{% if list_type != 'all' %}&list_type={{ list_type }}{% endif %}{% for genre_id in selected_genres %}&genre={{ genre_id }}{% endfor %}{% if selected_country %}&country={{ selected_country }}{% endif %}{% if year_gte %}&year_gte={{ year_gte }}{% endif %}{% if year_lte %}&year_lte={{ year_lte }}{% endif %}{% if vote_average_gte %}&vote_average_gte={{ vote_average_gte }}{% endif %}{% if vote_average_lte %}&vote_average_lte={{ vote_average_lte }}{% endif %}{% if vote_count_gte %}&vote_count_gte={{ vote_count_gte }}{% endif %}{% if runtime_gte %}&runtime_gte={{ runtime_gte }}{% endif %}{% if runtime_lte %}&runtime_lte={{ runtime_lte }}{% endif %}{% if with_status %}&with_status={{ with_status }}{% endif %}{% if with_networks %}&with_networks={{ with_networks }}{% endif %}{% if with_original_language %}&with_original_language={{ with_original_language }}{% endif %}&sort_by={{ selected_sort }}" aria-label="Son">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+{% else %}
+    <div class="alert alert-dark">
+        <h4 class="alert-heading">Üzgünüz!</h4>
+        <p>Arama kriterlerine uygun film veya dizi bulunamadı.</p>
+    </div>
+{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sabit Bul Butonu (Sayfanın Altında) -->
+<div id="floating-search-button" style="display: none;">
+    <button id="floating-apply-search" class="btn btn-primary">
+        <i class="fas fa-search me-2"></i>Bul
+    </button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+/* Filtreleme Stilleri */
+.filter-section {
+    border-bottom: 1px solid #444;
+    padding-bottom: 1rem;
+}
+
+.filter-section:last-child {
+    border-bottom: none;
+}
+
+/* Tür Etiketleri */
+.genre-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.genre-tag {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background-color: #495057;
+    color: #fff;
+    border-radius: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    border: 2px solid transparent;
+}
+
+.genre-tag:hover {
+    background-color: #6c757d;
+    transform: translateY(-1px);
+}
+
+.genre-tag.selected {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+/* Platform Logoları */
+.provider-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+}
+
+.provider-item {
+    position: relative;
+    cursor: pointer;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.provider-item:hover {
+    transform: scale(1.05);
+    border-color: #6c757d;
+}
+
+.provider-item.selected {
+    border-color: #0d6efd;
+    box-shadow: 0 0 10px rgba(13, 110, 253, 0.5);
+}
+
+.provider-logo {
+    width: 100%;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 0.25rem;
+}
+
+.provider-logo-placeholder {
+    width: 100%;
+    height: 40px;
+    border-radius: 0.25rem;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Range Slider */
+.range-slider {
+    position: relative;
+}
+
+.range-values {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #999;
+}
+
+/* TMDB Tarzı Range Slider */
+.form-range {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    height: 6px;
+}
+
+.form-range::-webkit-slider-track {
+    background: #032541;
+    height: 6px;
+    border-radius: 3px;
+}
+
+.form-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    background: #01b4e4;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.form-range::-moz-range-track {
+    background: #032541;
+    height: 6px;
+    border-radius: 3px;
+    border: none;
+}
+
+.form-range::-moz-range-thumb {
+    background: #01b4e4;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Anahtar Kelime Etiketleri */
+.keyword-tag {
+    display: inline-block;
+    background-color: #0d6efd;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    margin: 0.25rem 0.25rem 0.25rem 0;
+    font-size: 0.75rem;
+}
+
+.keyword-tag .remove-keyword {
+    margin-left: 0.5rem;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* Animasyonlar */
+#search-button-container {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Collapse butonu */
+#collapse-filters {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+#filters-content {
+    transition: all 0.3s ease;
+}
+
+#filters-content.collapsed {
+    display: none;
+}
+
+/* Sabit Bul Butonu */
+#floating-search-button {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    animation: slideUp 0.3s ease-out;
+}
+
+#floating-apply-search {
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 25px;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.4);
+    border: none;
+    background: linear-gradient(45deg, #0d6efd, #0056b3);
+    transition: all 0.3s ease;
+}
+
+#floating-apply-search:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(13, 110, 253, 0.6);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* TMDB Tarzı Dairesel Puan Göstergesi */
+.rating-circle {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    margin-right: 10px;
+}
+
+.rating-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.rating-bg {
+    fill: none;
+    stroke: #204529;
+    stroke-width: 3;
+}
+
+.rating-fill {
+    fill: none;
+    stroke: #21d07a;
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.3s ease;
+}
+
+.rating-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11px;
+    font-weight: bold;
+    color: white;
+    text-align: center;
+    line-height: 1;
+}
+
+/* Puan rengini değere göre ayarla */
+.rating-circle[data-rating^="0"] .rating-fill,
+.rating-circle[data-rating^="1"] .rating-fill,
+.rating-circle[data-rating^="2"] .rating-fill,
+.rating-circle[data-rating^="3"] .rating-fill,
+.rating-circle[data-rating^="4"] .rating-fill {
+    stroke: #db2360; /* Kırmızı - düşük puan */
+}
+
+.rating-circle[data-rating^="5"] .rating-fill,
+.rating-circle[data-rating^="6"] .rating-fill {
+    stroke: #d2d531; /* Sarı - orta puan */
+}
+
+.rating-circle[data-rating^="7"] .rating-fill,
+.rating-circle[data-rating^="8"] .rating-fill,
+.rating-circle[data-rating^="9"] .rating-fill {
+    stroke: #21d07a; /* Yeşil - yüksek puan */
+}
+
+/* Film kartı meta bilgileri düzenlemesi */
+.movie-card__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+}
+
+.movie-card__rating {
+    display: flex;
+    align-items: center;
+}
+
+.movie-card__year-runtime {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: 12px;
+}
+
+.movie-card__runtime {
+    margin-top: 2px;
+    font-weight: 500;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gerçek zamanlı arama özelliği
+    const searchInput = document.getElementById('search-input');
+    const movieListContainer = document.getElementById('movie-list-container');
+    const searchButtonContainer = document.getElementById('search-button-container');
+    const floatingSearchButton = document.getElementById('floating-search-button');
+    let searchTimeout;
+    let filtersChanged = false;
+    
+    // Filtre değişikliklerini izle
+    function showSearchButton() {
+        if (!filtersChanged) {
+            filtersChanged = true;
+            searchButtonContainer.style.display = 'block';
+            floatingSearchButton.style.display = 'block';
+        }
+    }
+    
+    // Tür etiketleri
+    document.querySelectorAll('.genre-tag').forEach(tag => {
+        tag.addEventListener('click', function() {
+            this.classList.toggle('selected');
+            showSearchButton();
+        });
+    });
+    
+    // Platform seçimi - Düzeltildi
+    document.querySelectorAll('.provider-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.toggle('selected');
+            showSearchButton();
+            console.log('Platform seçildi:', this.dataset.providerId, this.classList.contains('selected'));
+        });
+    });
+    
+    // Form elemanları değişiklik dinleyicileri
+    const filterInputs = [
+        'input[name="show_me"]',
+        '#include_adult',
+        '#search_all_releases',
+        '#release_date_gte',
+        '#release_date_lte',
+        '#with_original_language',
+        '#runtime_min_range',
+        '#runtime_max_range',
+        '#keywords_input',
+        '#sort_by',
+        '#vote_average_gte',
+        '#vote_average_lte',
+        '#vote_count_range'
+    ];
+    
+    filterInputs.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(element => {
+            element.addEventListener('change', function() {
+                showSearchButton();
+                console.log('Filtre değişti:', selector, this.value || this.checked);
+            });
+            element.addEventListener('input', function() {
+                showSearchButton();
+            });
+        });
+    });
+    
+    // Anahtar kelime ekleme
+    const keywordsInput = document.getElementById('keywords_input');
+    const selectedKeywords = document.getElementById('selected_keywords');
+    
+    keywordsInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const keyword = this.value.trim();
+            if (keyword) {
+                addKeyword(keyword);
+                this.value = '';
+                showSearchButton();
+            }
+        }
+    });
+    
+    function addKeyword(keyword) {
+        const keywordTag = document.createElement('span');
+        keywordTag.className = 'keyword-tag';
+        keywordTag.innerHTML = `${keyword} <span class="remove-keyword">×</span>`;
+        
+        keywordTag.querySelector('.remove-keyword').addEventListener('click', function() {
+            keywordTag.remove();
+            showSearchButton();
+        });
+        
+        selectedKeywords.appendChild(keywordTag);
+    }
+    
+    // Range slider güncellemeleri
+    const voteAverageRange = document.getElementById('vote_average_range');
+    const voteMin = document.getElementById('vote_min');
+    const voteMax = document.getElementById('vote_max');
+    
+    if (voteAverageRange) {
+        voteAverageRange.addEventListener('input', function() {
+            voteMax.textContent = this.value;
+            showSearchButton();
+        });
+    }
+
+    // En az kullanıcı oyu range slider
+    const voteCountRange = document.getElementById('vote_count_range');
+    const voteCountValue = document.getElementById('vote_count_value');
+    
+    if (voteCountRange) {
+        voteCountRange.addEventListener('input', function() {
+            voteCountValue.textContent = this.value;
+            showSearchButton();
+        });
+    }
+
+    // Süre range slider'ları (sadece filmler için)
+    const runtimeMinRange = document.getElementById('runtime_min_range');
+    const runtimeMaxRange = document.getElementById('runtime_max_range');
+    const runtimeMinValue = document.getElementById('runtime_min_value');
+    const runtimeMaxValue = document.getElementById('runtime_max_value');
+    
+    if (runtimeMinRange) {
+        runtimeMinRange.addEventListener('input', function() {
+            runtimeMinValue.textContent = this.value;
+            showSearchButton();
+        });
+    }
+    
+    if (runtimeMaxRange) {
+        runtimeMaxRange.addEventListener('input', function() {
+            runtimeMaxValue.textContent = this.value;
+            showSearchButton();
+        });
+    }
+    
+    // Filtreleri gizle/göster
+    const collapseBtn = document.getElementById('collapse-filters');
+    const filtersContent = document.getElementById('filters-content');
+    
+    collapseBtn.addEventListener('click', function() {
+        filtersContent.classList.toggle('collapsed');
+        const icon = this.querySelector('i');
+        if (filtersContent.classList.contains('collapsed')) {
+            icon.className = 'fas fa-chevron-down';
+        } else {
+            icon.className = 'fas fa-chevron-up';
+        }
+    });
+
+    // Gerçek zamanlı arama (eski kod)
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const searchTerm = this.value.trim();
+        
+        searchTimeout = setTimeout(function() {
+            if (searchTerm.length >= 2 || searchTerm.length === 0) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const mediaType = urlParams.get('type') || 'movie';
+                
+                let ajaxUrl = `/catalog/?type=${mediaType}`;
+                if (searchTerm.length > 0) {
+                    ajaxUrl += `&q=${encodeURIComponent(searchTerm)}`;
+                }
+                
+                movieListContainer.innerHTML = '<div class="text-center text-white py-5"><i class="fas fa-spinner fa-spin fa-2x"></i><br>Aranıyor...</div>';
+                
+                fetch(ajaxUrl, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newContent = doc.getElementById('movie-list-container');
+                    
+                    if (newContent) {
+                        movieListContainer.innerHTML = newContent.innerHTML;
+                        // Yeni yüklenen içerik için puan dairelerini başlat
+                        initRatingCircles();
+                    }
+                    
+                    const newUrl = searchTerm.length > 0 ? 
+                        `?type=${mediaType}&q=${encodeURIComponent(searchTerm)}` : 
+                        `?type=${mediaType}`;
+                    window.history.pushState({}, '', newUrl);
+                })
+                .catch(error => {
+                    console.error('Arama hatası:', error);
+                    movieListContainer.innerHTML = '<div class="alert alert-danger">Arama sırasında bir hata oluştu.</div>';
+                });
+            }
+        }, 300);
+    });
+
+    // Bul butonuna tıklama fonksiyonu
+    function performSearch() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const mediaType = urlParams.get('type') || 'movie';
+        
+        let newUrl = `?type=${mediaType}`;
+        
+        // Sıralama
+        const sortBy = document.getElementById('sort_by').value;
+        if (sortBy && sortBy !== 'popularity.desc') {
+            newUrl += `&sort_by=${sortBy}`;
+        }
+        
+        // Gösterme ölçütü
+        const showMe = document.querySelector('input[name="show_me"]:checked');
+        if (showMe && showMe.value !== 'everything') {
+            newUrl += `&show_me=${showMe.value}`;
+            console.log('Gösterme ölçütü:', showMe.value);
+        }
+        
+        // Seçili türleri al
+        const selectedGenres = Array.from(document.querySelectorAll('.genre-tag.selected'))
+            .map(tag => tag.dataset.genreId);
+        selectedGenres.forEach(genreId => {
+            newUrl += `&genre=${genreId}`;
+        });
+        
+        // Seçili platformları al
+        const selectedProviders = Array.from(document.querySelectorAll('.provider-item.selected'))
+            .map(item => item.dataset.providerId);
+        if (selectedProviders.length > 0) {
+            newUrl += `&with_watch_providers=${selectedProviders.join('|')}`;
+            console.log('Seçili platformlar:', selectedProviders);
+        }
+        
+        // Tarih filtreleri
+        const releaseGte = document.getElementById('release_date_gte').value;
+        const releaseLte = document.getElementById('release_date_lte').value;
+        if (releaseGte) newUrl += `&release_date.gte=${releaseGte}`;
+        if (releaseLte) newUrl += `&release_date.lte=${releaseLte}`;
+        
+        // Dil filtresi
+        const language = document.getElementById('with_original_language').value;
+        if (language) newUrl += `&with_original_language=${language}`;
+        
+        // Puan filtreleri
+        const voteGte = document.getElementById('vote_average_gte').value;
+        const voteLte = document.getElementById('vote_average_lte').value;
+        const voteCountGte = document.getElementById('vote_count_range').value;
+        if (voteGte) newUrl += `&vote_average.gte=${voteGte}`;
+        if (voteLte) newUrl += `&vote_average.lte=${voteLte}`;
+        if (voteCountGte && voteCountGte !== '0') newUrl += `&vote_count.gte=${voteCountGte}`;
+        
+        // Süre filtreleri (sadece filmler için)
+        if (mediaType === 'movie') {
+            const runtimeGte = document.getElementById('runtime_min_range').value;
+            const runtimeLte = document.getElementById('runtime_max_range').value;
+            if (runtimeGte && runtimeGte !== '0') newUrl += `&runtime.gte=${runtimeGte}`;
+            if (runtimeLte && runtimeLte !== '400') newUrl += `&runtime.lte=${runtimeLte}`;
+        }
+        
+        // Anahtar kelimeler
+        const keywords = Array.from(document.querySelectorAll('.keyword-tag'))
+            .map(tag => tag.textContent.replace('×', '').trim());
+        if (keywords.length > 0) {
+            newUrl += `&with_keywords=${keywords.join(',')}`;
+        }
+        
+        // Geçerlilik seçenekleri
+        const includeAdult = document.getElementById('include_adult').checked;
+        const searchAllReleases = document.getElementById('search_all_releases').checked;
+        if (includeAdult) newUrl += `&include_adult=1`;
+        if (searchAllReleases) newUrl += `&search_all_releases=1`;
+        
+        console.log('Yeni URL:', newUrl);
+        
+        // Yönlendir
+        window.location.href = newUrl;
+    }
+
+    // Bul butonuna tıklama (normal)
+    document.getElementById('apply-search').addEventListener('click', performSearch);
+    
+    // Bul butonuna tıklama (sabit)
+    document.getElementById('floating-apply-search').addEventListener('click', performSearch);
+
+    // Scroll event listener - sabit butonun görünürlüğü için
+    let isScrolling = false;
+    window.addEventListener('scroll', function() {
+        if (!isScrolling && filtersChanged) {
+            isScrolling = true;
+            requestAnimationFrame(function() {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const floatingButton = document.getElementById('floating-search-button');
+                
+                if (scrollTop > 300) { // 300px scroll sonrası göster
+                    floatingButton.style.display = 'block';
+                } else {
+                    floatingButton.style.display = filtersChanged ? 'block' : 'none';
+                }
+                isScrolling = false;
+            });
+        }
+    });
+
+    // Dairesel puan göstergelerini başlat
+    function initRatingCircles() {
+        document.querySelectorAll('.rating-circle').forEach(circle => {
+            const rating = parseFloat(circle.dataset.rating) || 0;
+            const percentage = (rating / 10) * 100;
+            const fillPath = circle.querySelector('.rating-fill');
+            
+            if (fillPath) {
+                fillPath.style.strokeDasharray = `${percentage}, 100`;
+            }
+        });
+    }
+    
+    // Sayfa yüklendiğinde puan dairelerini başlat
+    initRatingCircles();
+});
+</script>
+{% endblock %} 

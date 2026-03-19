@@ -1,0 +1,546 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  {% if media_details.title %}
+    {{ media_details.title }} - Detay
+  {% else %}
+    Film/Dizi Detayı
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section - Full width backdrop - Margin ve padding sıfırlandı -->
+<div class="position-relative" style="margin-top: -24px; margin-bottom: 0;">
+  <!-- Backdrop image with overlay - container-fluid ile tam genişlik sağlandı -->
+  <div class="position-relative container-fluid px-0" style="height: 85vh; min-height: 500px; background-image: url('{% if media_details.backdrop_path %}https://image.tmdb.org/t/p/original{{ media_details.backdrop_path }}{% else %}{% static 'images/default_backdrop.jpg' %}{% endif %}'); background-size: cover; background-position: center;">
+    <!-- Dark gradient overlay -->
+    <div class="position-absolute top-0 start-0 w-100 h-100" 
+         style="background: linear-gradient(90deg, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.4) 100%), 
+                linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 50%);">
+    </div>
+    
+    <!-- Main content positioned over backdrop -->
+    <div class="container h-100 position-relative">
+      <div class="row h-100 align-items-center">
+        <!-- Poster Column -->
+        <div class="col-md-3 col-lg-3 mb-4 mb-md-0">
+          <div class="position-relative" style="top: 50px;">
+            {% comment %} Poster URL'ini kontrol et {% endcomment %}
+            {% if media_details.poster_url %}
+                <img src="{{ media_details.poster_url }}" alt="{{ media_details.title }}" 
+                     class="img-fluid rounded shadow" style="width: 100%; max-width: 300px;">
+            {% else %}
+                <div class="bg-secondary d-flex align-items-center justify-content-center rounded shadow" style="width: 100%; max-width: 300px; height: 450px;">
+                    <i class="fas fa-image fa-3x text-dark"></i>
+                </div>
+            {% endif %}
+          </div>
+      </div>
+      
+        <!-- Details Column -->
+        <div class="col-md-9 col-lg-7 text-white">
+          <!-- Title and year -->
+          <h1 class="display-4 fw-bold mb-1">
+            {{ media_details.title }}
+            <span class="text-muted">
+            ({% if media_details.release_date %}{{ media_details.release_date|slice:":4" }}{% elif media_details.first_air_date %}{{ media_details.first_air_date|slice:":4" }}{% else %}????{% endif %})
+          </span>
+        </h1>
+        
+          <!-- Basic info line -->
+          <p class="mb-4">
+            {% if media_details.release_date %}{{ media_details.release_date }}{% endif %}
+            • 
+            {% if media_details.genres %}
+            {% for genre in media_details.genres %}
+              {{ genre.name }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+          {% endif %}
+            {% if media_details.runtime %} • {{ media_details.runtime }} dakika{% endif %}
+        </p>
+
+          <!-- Rating and action buttons in a row -->
+          <div class="d-flex align-items-center mb-4 gap-3">
+            <!-- Rating circle -->
+            <div class="position-relative" style="width: 60px; height: 60px;">
+              <div class="position-absolute top-0 start-0 w-100 h-100 rounded-circle border border-2 
+                          d-flex align-items-center justify-content-center"
+                   style="border-color: 
+                          {% if media_details.vote_average >= 7 %}#21d07a{% elif media_details.vote_average >= 4 %}#d2d531{% else %}#db2360{% endif %}; 
+                          background-color: rgba(0,0,0,0.6);">
+                <div>
+                  <span class="fw-bold fs-4">{{ media_details.vote_average|floatformat:1 }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="small text-muted">
+              Üyelerin<br>Puanları
+          </div>
+          
+            <div class="ms-4">
+          {% if user.is_authenticated %}
+              <div class="dropdown">
+                <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" id="ratingDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                  Puan Ver {% if user_rating %}({{ user_rating }}){% endif %}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-dark py-2" aria-labelledby="ratingDropdown" style="min-width: 180px;">
+                  <li class="px-3 pb-2 text-center text-muted"><strong>1-10 Arası Puan Ver</strong></li>
+                  <li>
+                    <div class="d-flex flex-wrap justify-content-center px-2">
+                      {% comment %} Puanlama döngüsünü context'ten gelen rating_range ile değiştir {% endcomment %}
+                      {% for i in rating_range %}
+                      <form method="post" action="{% url 'rate_update' %}" class="p-1">
+              {% csrf_token %}
+              <input type="hidden" name="media_id" value="{{ media_details.db_object.id }}">
+                        <input type="hidden" name="score" value="{{ i }}">
+                        <button type="submit" 
+                                class="btn {% if user_rating == i %}btn-warning{% else %}btn-outline-secondary{% endif %} px-2" 
+                                style="min-width: 40px; margin: 2px;" 
+                                title="{{ i }} puan ver">{{ i }}</button>
+            </form>
+                      {% endfor %}
+          </div>
+                  </li>
+                </ul>
+          </div>
+          {% endif %}
+        </div>
+
+            <!-- Action buttons -->
+            <div class="d-flex gap-2 ms-2">
+              <!-- Favoriler buton -->
+              <form method="post" action="{% url 'list_update' %}">
+                {% csrf_token %}
+                <input type="hidden" name="media_id" value="{{ media_details.db_object.id }}">
+                <input type="hidden" name="list_type" value="favorite">
+                <input type="hidden" name="action" value="{% if is_in_favorite %}remove{% else %}add{% endif %}">
+                <button type="submit" class="btn {% if is_in_favorite %}btn-danger{% else %}btn-dark{% endif %} btn-sm rounded-circle" 
+                        style="width: 46px; height: 46px;" data-bs-toggle="tooltip" 
+                        data-bs-placement="top" title="{% if is_in_favorite %}Favorilerden Çıkar{% else %}Favorilere Ekle{% endif %}">
+                  <i class="fas fa-heart"></i>
+                </button>
+              </form>
+              
+              <!-- İzlenecekler buton -->
+              <form method="post" action="{% url 'list_update' %}">
+            {% csrf_token %}
+            <input type="hidden" name="media_id" value="{{ media_details.db_object.id }}">
+            <input type="hidden" name="list_type" value="watchlist">
+            <input type="hidden" name="action" value="{% if is_in_watchlist %}remove{% else %}add{% endif %}">
+                <button type="submit" class="btn {% if is_in_watchlist %}btn-info{% else %}btn-dark{% endif %} btn-sm rounded-circle" 
+                        style="width: 46px; height: 46px;" data-bs-toggle="tooltip" 
+                        data-bs-placement="top" title="{% if is_in_watchlist %}İzleme Listesinden Çıkar{% else %}İzleme Listeme Ekle{% endif %}">
+                  <i class="fas fa-bookmark"></i>
+            </button>
+          </form>
+          
+              <!-- Takip listesi buton -->
+              <form method="post" action="{% url 'list_update' %}">
+            {% csrf_token %}
+            <input type="hidden" name="media_id" value="{{ media_details.db_object.id }}">
+                <input type="hidden" name="list_type" value="follow">
+                <input type="hidden" name="action" value="{% if is_in_follow %}remove{% else %}add{% endif %}">
+                <button type="submit" class="btn {% if is_in_follow %}btn-success{% else %}btn-dark{% endif %} btn-sm rounded-circle" 
+                        style="width: 46px; height: 46px;" data-bs-toggle="tooltip" 
+                        data-bs-placement="top" title="{% if is_in_follow %}Takibi Bırak{% else %}Takip Et (Bildirim Al){% endif %}">
+                  <i class="fas fa-bell"></i>
+            </button>
+          </form>
+            </div>
+            
+            <!-- Fragman butonu -->
+            {% comment %} Fragman key'ini kontrol et {% endcomment %}
+            {% if media_details.trailer_key %}
+            <a href="https://www.youtube.com/watch?v={{ media_details.trailer_key }}" target="_blank" 
+               class="btn btn-outline-light btn-sm ms-2">
+              <i class="fas fa-play me-1"></i> Fragmanı Oynat
+            </a>
+          {% endif %}
+          </div>
+          
+          <!-- Tagline -->
+          {% if media_details.tagline %}
+          <p class="fst-italic text-muted">{{ media_details.tagline }}</p>
+          {% endif %}
+
+          <!-- Overview section -->
+          <h3 class="h5 mb-2">Özet</h3>
+          <p class="mb-4" style="max-width: 800px;">{{ media_details.overview }}</p>
+
+          <!-- Director/Writer info -->
+          {% if media_details.credits.crew %}
+          <div class="row">
+            {% for member in media_details.credits.crew|slice:":3" %}
+              {% if member.job == 'Director' or member.job == 'Screenplay' or member.job == 'Producer' or member.job == 'Writer' %}
+              <div class="col-md-4 mb-3">
+                <p class="mb-0 fw-bold">{{ member.name }}</p>
+                <p class="small text-muted">{{ member.job }}</p>
+              </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab Bölümü - Tabs eklendi -->
+<div class="bg-dark">
+  <div class="container py-4">
+    <!-- Tabs navigation -->
+    <ul class="nav nav-tabs mb-4" id="contentTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="cast-tab" data-bs-toggle="tab" data-bs-target="#cast" type="button" role="tab" aria-controls="cast" aria-selected="true">
+          <i class="fas fa-users me-1"></i> OYUNCULAR
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="similar-tab" data-bs-toggle="tab" data-bs-target="#similar" type="button" role="tab" aria-controls="similar" aria-selected="false">
+          <i class="fas fa-film me-1"></i> BENZER FİLMLER
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="comments-tab" data-bs-toggle="tab" data-bs-target="#comments" type="button" role="tab" aria-controls="comments" aria-selected="false">
+          <i class="fas fa-comments me-1"></i> YORUMLAR
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="trailers-tab" data-bs-toggle="tab" data-bs-target="#trailers" type="button" role="tab" aria-controls="trailers" aria-selected="false">
+          <i class="fas fa-play-circle me-1"></i> FRAGMANLAR
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="false">
+          <i class="fas fa-info-circle me-1"></i> BİLGİLER
+        </button>
+      </li>
+    </ul>
+    
+    <!-- Tab içerikleri -->
+    <div class="tab-content" id="contentTabContent">
+      <!-- Oyuncular Tab -->
+      <div class="tab-pane fade show active" id="cast" role="tabpanel" aria-labelledby="cast-tab">
+        <h2 class="text-white mb-4">Öne Çıkan Oyuncular</h2>
+        
+        <div class="row">
+          <!-- Cast slider with scrolling -->
+          <div class="col-12">
+            <div class="d-flex overflow-auto pb-3 gap-3">
+    {% if media_details.credits.cast %}
+        {% for actor in media_details.credits.cast|slice:":10" %}
+                  <div class="card bg-dark text-white border-0" style="min-width: 138px; max-width: 138px;">
+            {% if actor.profile_path %}
+            <img src="https://image.tmdb.org/t/p/w200{{ actor.profile_path }}" 
+                 alt="{{ actor.name }}" 
+                         class="card-img-top rounded" style="height: 175px; object-fit: cover;">
+            {% else %}
+                    <div class="bg-secondary d-flex align-items-center justify-content-center rounded" style="height: 175px;">
+                      <i class="fas fa-user fa-2x text-dark"></i>
+            </div>
+            {% endif %}
+                    <div class="card-body p-2">
+                      <h6 class="card-title mb-0 text-white fw-bold" style="font-size: 0.9rem;">{{ actor.name }}</h6>
+                      <p class="card-text text-muted" style="font-size: 0.8rem;">{{ actor.character }}</p>
+                    </div>
+          </div>
+        {% endfor %}
+              {% else %}
+                <p class="text-muted">Bu film/dizi için oyuncu bilgisi bulunamadı.</p>
+    {% endif %}
+        </div>
+            
+            <!-- View full cast button -->
+            <div class="text-center mt-3">
+              <a href="#" class="btn btn-outline-light btn-sm">Tüm Kadroyu Görüntüle</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Benzer Filmler Tab -->
+      <div class="tab-pane fade" id="similar" role="tabpanel" aria-labelledby="similar-tab">
+        <h2 class="text-white mb-4">Benzer Filmler</h2>
+        
+        <div class="row">
+          <div class="col-12">
+            <div class="d-flex overflow-auto pb-3 gap-3">
+              {% comment %} Benzer medya listesini kontrol et {% endcomment %}
+              {% if media_details.similar_media %}
+                {% for item in media_details.similar_media|slice:":10" %}
+                  <div class="card bg-dark text-white border-0" style="min-width: 150px; max-width: 150px;">
+                    <a href="{% url 'media_detail' media_type=item.media_type media_id=item.id %}" class="text-decoration-none">
+              {% if item.poster_url %}
+              <img src="{{ item.poster_url }}" 
+                           alt="{{ item.title|default:'Benzer Medya' }}" 
+                           class="card-img-top rounded" style="height: 225px; object-fit: cover;">
+              {% else %}
+                      <div class="bg-secondary d-flex align-items-center justify-content-center rounded" style="height: 225px;">
+                        <i class="fas fa-film fa-2x text-dark"></i>
+              </div>
+              {% endif %}
+                      <div class="card-body p-2">
+                        <h6 class="card-title mb-0 text-white fw-bold" style="font-size: 0.9rem;">
+                {% if item.title %}
+                  {{ item.title }}
+                {% elif item.original_title %}
+                  {{ item.original_title }}
+                {% else %}
+                  İsimsiz Medya
+                {% endif %}
+                        </h6>
+                        {% if item.release_date %}
+                        <p class="card-text text-muted" style="font-size: 0.8rem;">{{ item.release_date|slice:":4" }}</p>
+                        {% endif %}
+                      </div>
+            </a>
+          </div>
+        {% endfor %}
+              {% else %}
+                <p class="text-muted">Bu film/dizi için benzer içerik bulunamadı.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Yorumlar Tab -->
+      <div class="tab-pane fade" id="comments" role="tabpanel" aria-labelledby="comments-tab">
+        <h2 class="text-white mb-4">Yorumlar</h2>
+        
+        <div class="row">
+          <div class="col-lg-8 mx-auto">
+            {% if user.is_authenticated %}
+            <div class="mb-4">
+              <form id="comment-form" method="post" action="{% url 'add_comment' media_id=media_details.db_object.id %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                  <textarea id="comment-textarea" name="content" class="form-control bg-dark text-white" rows="3" required
+                            placeholder="Bu film hakkında ne düşünüyorsun?"></textarea>
+                </div>
+                <div class="text-end">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-comment me-1"></i> Yorum Ekle
+                  </button>
+                </div>
+              </form>
+              
+              <div class="alert alert-danger d-none mt-3" id="comment-error">
+                Yorum eklenirken bir hata oluştu. Lütfen tekrar deneyin.
+              </div>
+              <div class="alert alert-success d-none mt-3" id="comment-success">
+                Yorum başarıyla eklendi!
+      </div>
+    </div>
+    {% endif %}
+
+            <div class="comments-section" id="comments-container">
+              {% if comments %}
+                {% for comment in comments %}
+                  <div class="card bg-dark mb-3 border-0">
+                    <div class="card-header bg-dark border-bottom border-secondary d-flex align-items-center">
+                      <a href="{% url 'user_profile' username=comment.user.username %}" class="text-decoration-none d-flex align-items-center">
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" 
+                            style="width: 40px; height: 40px;">
+                          <span class="text-white fw-bold">{{ comment.user.username|first|upper }}</span>
+                        </div>
+                        <div>
+                          <span class="text-white">{{ comment.user.username }}</span>
+                          <small class="d-block text-muted">{{ comment.created_at|date:"d M Y H:i" }}</small>
+                        </div>
+                      </a>
+                    </div>
+                    <div class="card-body text-white">
+                      <p class="card-text">{{ comment.content }}</p>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="text-center py-4" id="no-comments">
+                  <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                  <p class="text-muted">Henüz yorum yapılmamış. İlk yorumu sen yap!</p>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fragmanlar Tab -->
+      <div class="tab-pane fade" id="trailers" role="tabpanel" aria-labelledby="trailers-tab">
+        <h2 class="text-white mb-4">Fragmanlar</h2>
+        
+        <div class="row">
+          <div class="col-lg-8 mx-auto">
+            {% comment %} Fragman key'ini kontrol et {% endcomment %}
+            {% if media_details.trailer_key %}
+              <div class="ratio ratio-16x9 mb-4">
+                <iframe 
+                  src="https://www.youtube.com/embed/{{ media_details.trailer_key }}" 
+                  title="{{ media_details.title }} Fragman" 
+                  frameborder="0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowfullscreen>
+                </iframe>
+              </div>
+              <h5 class="text-white">{{ media_details.title }} - Resmi Fragman</h5>
+            {% else %}
+              <div class="text-center py-5">
+                <i class="fas fa-film fa-4x text-muted mb-3"></i>
+                <p class="text-muted">Bu film/dizi için henüz fragman bulunmuyor.</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Bilgiler Tab -->
+      <div class="tab-pane fade" id="details" role="tabpanel" aria-labelledby="details-tab">
+        <h2 class="text-white mb-4">Ek Bilgiler</h2>
+        
+        <div class="row">
+          <div class="col-md-6 mb-4">
+            <h3 class="h5 text-white mb-3">Film Bilgileri</h3>
+            <ul class="list-unstyled text-muted">
+              <li class="mb-2"><span class="text-white">Durum:</span> {{ media_details.status }}</li>
+              <li class="mb-2"><span class="text-white">Orijinal Dili:</span> {{ media_details.original_language|upper }}</li>
+      {% if media_details.media_type == 'movie' %}
+              <li class="mb-2"><span class="text-white">Bütçe:</span> ${{ media_details.budget|floatformat:0|default:"Bilinmiyor" }}</li>
+              <li class="mb-2"><span class="text-white">Hasılat:</span> ${{ media_details.revenue|floatformat:0|default:"Bilinmiyor" }}</li>
+      {% endif %}
+            </ul>
+          </div>
+          
+          <div class="col-md-6 mb-4">
+            <h3 class="h5 text-white mb-3">Anahtar Kelimeler</h3>
+            <div class="d-flex flex-wrap gap-1">
+              {% for genre in media_details.genres %}
+                <span class="badge bg-secondary me-1 mb-1">{{ genre.name }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+  // Tooltip'leri etkinleştir
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+
+  const commentTextarea = document.getElementById('comment-textarea');
+  const commentForm = document.getElementById('comment-form');
+  const commentsContainer = document.getElementById('comments-container');
+  const noCommentsDiv = document.getElementById('no-comments');
+  const commentErrorAlert = document.getElementById('comment-error');
+  const commentSuccessAlert = document.getElementById('comment-success');
+
+  if (commentTextarea && commentForm) {
+    commentTextarea.addEventListener('keydown', function(event) {
+      // Enter\'a basıldı ama Shift\'e basılmadıysa formu gönder
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault(); // Textarea\'nın varsayılan Enter davranışını engelle
+        commentForm.dispatchEvent(new Event('submit', { cancelable: true })); // Formu tetikle
+      }
+      // Shift + Enter yeni satır ekler (varsayılan davranış)
+    });
+
+    commentForm.addEventListener('submit', function(event) {
+      event.preventDefault(); // Varsayılan form gönderimini engelle
+      
+      // Hata/Başarı mesajlarını gizle
+      commentErrorAlert.classList.add('d-none');
+      commentSuccessAlert.classList.add('d-none');
+        
+        const formData = new FormData(commentForm);
+      const url = commentForm.action;
+      const csrfToken = formData.get('csrfmiddlewaretoken');
+        
+      fetch(url, {
+          method: 'POST',
+          body: formData,
+          headers: {
+          'X-Requested-With': 'XMLHttpRequest', // AJAX isteği olduğunu belirt
+          'X-CSRFToken': csrfToken // CSRF token\'ı ekle
+        }
+        })
+        .then(response => {
+          if (!response.ok) {
+          // HTTP hatası varsa veya view'dan {success: false} gelirse
+          return response.json().then(data => {
+            throw new Error(data.error || 'Yorum eklenirken bir sunucu hatası oluştu.');
+          });
+          }
+        return response.json(); // Başarılı yanıtı JSON olarak işle
+        })
+        .then(data => {
+          if (data.success) {
+          // Yeni yorumu HTML olarak oluştur (view\'dan gelen verilerle)
+          const newCommentHTML = `
+            <div class="card bg-dark mb-3 border-0">
+              <div class="card-header bg-dark border-bottom border-secondary d-flex align-items-center">
+                <a href="/profile/${data.username}/" class="text-decoration-none d-flex align-items-center">
+                  <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" 
+                      style="width: 40px; height: 40px;">
+                    <span class="text-white fw-bold">${data.username.charAt(0).toUpperCase()}</span>
+                  </div>
+                  <div>
+                    <span class="text-white">${data.username}</span>
+                    <small class="d-block text-muted">${data.created_at}</small>
+                  </div>
+                </a>
+              </div>
+              <div class="card-body text-white">
+                <p class="card-text">${formData.get('content')}</p>
+              </div>
+              </div>
+            `;
+            
+          // "Henüz yorum yok" mesajını gizle (varsa)
+          if (noCommentsDiv) {
+            noCommentsDiv.classList.add('d-none');
+          }
+          
+          // Yeni yorumu listenin başına ekle
+          commentsContainer.insertAdjacentHTML('afterbegin', newCommentHTML);
+          
+          // Formu temizle
+            commentForm.reset();
+            
+          // Başarı mesajını göster
+          commentSuccessAlert.classList.remove('d-none');
+          // Bir süre sonra başarı mesajını gizle
+            setTimeout(() => {
+             commentSuccessAlert.classList.add('d-none');
+          }, 5000);
+
+        } else {
+          // View tarafından {success: false} döndürüldü
+          throw new Error(data.error || 'Yorum eklenirken bir hata oluştu.');
+          }
+        })
+        .catch(error => {
+        console.error('Yorum gönderme hatası:', error);
+        commentErrorAlert.textContent = error.message; // Hata mesajını göster
+        commentErrorAlert.classList.remove('d-none');
+        // Bir süre sonra hata mesajını gizle
+          setTimeout(() => {
+             commentErrorAlert.classList.add('d-none');
+          }, 7000);
+        });
+      });
+    }
+  });
+</script>
+{% endblock scripts %}

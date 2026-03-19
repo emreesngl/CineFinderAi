@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Üye Ol{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card bg-dark text-light panel border-secondary">
+            <div class="card-body p-4 p-md-5">
+                <h2 class="card-title text-center mb-4 text-primary">
+                    <i class="fab fa-google me-2"></i>Google ile Kayıt Ol
+                </h2>
+                
+                <div class="alert alert-info bg-primary bg-opacity-10 border-primary text-light">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Google hesabınızı kullanarak Movie Finder AI sitesine giriş yapmak üzeresiniz. Son adım olarak lütfen formu doldurunuz.
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    
+                    {{ form|crispy }}
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Üye Ol
+                        </button>
+                    </div>
+                </form>
+                
+                <hr class="border-secondary my-4">
+                <div class="text-center text-muted">
+                    Zaten bir hesabınız var mı? <a href="{% url 'account_login' %}" class="text-primary">Giriş Yapın</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

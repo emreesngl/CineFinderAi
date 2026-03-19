@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">{{ page_title }}</h2>
+    <a href="{% url 'user_profile' username=profile_user.username %}" class="btn btn-sm btn-outline-secondary">
+        &larr; {{ profile_user.username }} Profiline Dön
+    </a>
+</div>
+
+{% if user_list %}
+    <div class="list-group">
+        {% for item in user_list %}
+            {% comment %} 
+               Liste türüne göre doğru kişiyi (takipçi veya takip edilen) seçelim.
+            {% endcomment %}
+            {% if list_type == 'following' %}
+                {% with person=item.followed %}
+                    {% include 'includes/follow_list_item.html' %}
+                {% endwith %}
+            {% else %}
+                {% with person=item.follower %}
+                    {% include 'includes/follow_list_item.html' %}
+                {% endwith %}
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    {# Sayfalama #}
+    {% include 'includes/pagination.html' with page_obj=page_obj url_params=url_params %}
+
+{% else %}
+    <p class="text-muted">
+        {% if list_type == 'followers' %}
+            {{ profile_user.username }} kullanıcısının henüz takipçisi yok.
+        {% else %}
+            {{ profile_user.username }} henüz kimseyi takip etmiyor.
+        {% endif %}
+    </p>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{# Takip et/bırak butonu için AJAX (profile.html'deki gibi) #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userListContainer = document.querySelector('.list-group'); // Ana container
+    const csrftoken = getCookie('csrftoken'); // base.html'den
+
+    if (userListContainer) {
+        userListContainer.addEventListener('click', function(event) {
+            // Sadece liste içindeki takip butonlarına tıklandıysa
+            if (event.target.classList.contains('toggle-follow-btn-list')) {
+                const button = event.target;
+                const userId = button.dataset.userId;
+                const url = button.dataset.url;
+
+                if (!csrftoken) {
+                    console.error("CSRF Token not found!");
+                    if(window.toastr) toastr.error("Güvenlik anahtarı eksik.");
+                    return;
+                }
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrftoken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: `user_id=${userId}`
+                })
+                .then(response => response.json()) // Hata kontrolü için handleResponse eklenebilir (profile.html'deki gibi)
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Buton metnini ve stilini güncelle
+                        button.textContent = data.is_following ? 'Takibi Bırak' : 'Takip Et';
+                        button.classList.toggle('btn-primary', !data.is_following);
+                        button.classList.toggle('btn-secondary', data.is_following);
+                        if(window.toastr) toastr.success(data.message || 'İşlem başarılı.');
+                        
+                        // Eğer bu liste, giriş yapmış kullanıcının kendi "Takip Edilenler" listesi ise
+                        // ve takibi bıraktıysa, öğeyi dinamik olarak listeden kaldırabiliriz.
+                        // Bu, sadece mevcut kullanıcının profilinde ve 'following' listesinde anlamlı olur.
+                        const isOwnProfile = "{{ request.user.username }}" === "{{ profile_user.username }}";
+                        const isFollowingList = "{{ list_type }}" === "following";
+                        if (!data.is_following && isOwnProfile && isFollowingList) {
+                             const listItem = button.closest('.list-group-item');
+                             if (listItem) {
+                                 listItem.style.transition = 'opacity 0.5s ease';
+                                 listItem.style.opacity = '0';
+                                 setTimeout(() => listItem.remove(), 500);
+                             }
+                        } 
+                    } else {
+                        if(window.toastr) toastr.error(data.message || 'Bir hata oluştu.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Follow toggle error:', error); 
+                    if(window.toastr) toastr.error('İşlem sırasında bir hata oluştu.');
+                });
+            }
+        });
+    }
+});
+</script>
+{% endblock scripts %} 

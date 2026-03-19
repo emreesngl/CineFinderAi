@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - FilmBot{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="text-center mb-5">
+        <h1 class="display-4 text-gradient mb-3">🏆 Rozet Koleksiyonu</h1>
+        <p class="lead text-muted">Filmler ve diziler hakkında ne kadar bilgili olduğunu göster!</p>
+        {% if user.is_authenticated %}
+        <p class="text-success">
+            <i class="fas fa-trophy me-2"></i>
+            <strong>{{ user_badges|length }}</strong> rozet kazandın!
+        </p>
+        {% endif %}
+    </div>
+
+    {% if all_badges %}
+        {% regroup all_badges by category as badges_by_category %}
+        
+        {% for category_group in badges_by_category %}
+        <div class="mb-5">
+            <div class="row align-items-center mb-4">
+                <div class="col">
+                    <h3 class="text-primary mb-0">
+                        {% if category_group.grouper == 'rating' %}
+                            ⭐ Puanlama Rozetleri
+                        {% elif category_group.grouper == 'commenting' %}
+                            💬 Yorumlama Rozetleri
+                        {% elif category_group.grouper == 'collection' %}
+                            📚 Koleksiyon Rozetleri
+                        {% elif category_group.grouper == 'social' %}
+                            👥 Sosyal Rozetler
+                        {% elif category_group.grouper == 'community' %}
+                            🏘️ Topluluk Rozetleri
+                        {% elif category_group.grouper == 'special' %}
+                            ⭐ Özel Rozetler
+                        {% else %}
+                            {{ category_group.grouper|title }} Rozetleri
+                        {% endif %}
+                    </h3>
+                </div>
+            </div>
+            
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for badge in category_group.list %}
+                <div class="col">
+                    <div class="card h-100 badge-card 
+                        {% if badge.id in user_badge_ids %}earned{% else %}not-earned{% endif %}
+                        tier-{{ badge.tier }}">
+                        <div class="card-body text-center">
+                            <!-- Rozet İkonu -->
+                            <div class="badge-icon mb-3">
+                                {% if badge.icon %}
+                                    <img src="{{ badge.icon.url }}" alt="{{ badge.name }}" class="badge-image">
+                                {% else %}
+                                    <!-- Emoji veya varsayılan ikon -->
+                                    <div class="emoji-icon">
+                                        {% if badge.category == 'rating' %}
+                                            {% if badge.tier == 'bronze' %}⭐{% elif badge.tier == 'silver' %}🌟{% else %}💫{% endif %}
+                                        {% elif badge.category == 'commenting' %}
+                                            {% if badge.tier == 'bronze' %}💬{% elif badge.tier == 'silver' %}🗨️{% else %}🎭{% endif %}
+                                        {% elif badge.category == 'collection' %}
+                                            {% if badge.tier == 'bronze' %}❤️{% elif badge.tier == 'silver' %}💖{% else %}📚{% endif %}
+                                        {% elif badge.category == 'social' %}
+                                            {% if badge.tier == 'bronze' %}👤{% elif badge.tier == 'silver' %}👥{% else %}🌟{% endif %}
+                                        {% elif badge.category == 'community' %}
+                                            {% if badge.tier == 'bronze' %}🎬{% elif badge.tier == 'silver' %}🎪{% else %}🏆{% endif %}
+                                        {% elif badge.category == 'special' %}
+                                            {% if badge.tier == 'bronze' %}🔍{% elif badge.tier == 'silver' %}📈{% else %}👑{% endif %}
+                                        {% else %}
+                                            🏅
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Rozet Seviyesi -->
+                            <div class="tier-indicator mb-2">
+                                <span class="tier-badge tier-{{ badge.tier }}">
+                                    {% if badge.tier == 'bronze' %}🥉 Bronz
+                                    {% elif badge.tier == 'silver' %}🥈 Gümüş  
+                                    {% elif badge.tier == 'gold' %}🥇 Altın
+                                    {% endif %}
+                                </span>
+                            </div>
+
+                            <!-- Rozet Adı -->
+                            <h5 class="card-title badge-name mb-2">{{ badge.name }}</h5>
+                            
+                            <!-- Rozet Açıklaması -->
+                            <p class="card-text badge-description mb-3">{{ badge.description }}</p>
+                            
+                            <!-- Kazanma Koşulları -->
+                            <div class="requirements mb-3">
+                                {% if badge.points_required %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-star me-1"></i>{{ badge.points_required }} Puan Gerekli
+                                    </small>
+                                {% elif badge.comment_count_required %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-comment me-1"></i>{{ badge.comment_count_required }} Yorum Gerekli
+                                    </small>
+                                {% elif badge.favorites_count_required %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-heart me-1"></i>{{ badge.favorites_count_required }} Favori Gerekli
+                                    </small>
+                                {% elif badge.ratings_count_required %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-star-half-alt me-1"></i>{{ badge.ratings_count_required }} Puanlama Gerekli
+                                    </small>
+                                {% elif badge.followers_count_required %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-users me-1"></i>{{ badge.followers_count_required }} Takipçi Gerekli
+                                    </small>
+                                {% elif badge.following_count_required %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-user-plus me-1"></i>{{ badge.following_count_required }} Takip Gerekli
+                                    </small>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Durum -->
+                            <div class="badge-status">
+                                {% if badge.id in user_badge_ids %}
+                                    <span class="status-badge earned">
+                                        <i class="fas fa-check-circle me-1"></i>Kazanıldı!
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge not-earned">
+                                        <i class="fas fa-lock me-1"></i>Henüz Kazanılmadı
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-medal fa-3x text-muted mb-3"></i>
+            <p class="text-muted">Gösterilecek rozet bulunamadı.</p>
+        </div>
+    {% endif %}
+
+    {% if user.is_authenticated %}
+    <hr class="my-5 border-secondary">
+    <div class="text-center">
+        <a href="{% url 'profile' %}" class="btn btn-outline-primary btn-lg">
+            <i class="fas fa-arrow-left me-2"></i>Profiline Dön
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Rozet Kartları */
+.badge-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Kazanılmış Rozetler - Renkli */
+.badge-card.earned {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(32, 201, 151, 0.1));
+    border-color: rgba(40, 167, 69, 0.3);
+    transform: scale(1);
+}
+
+.badge-card.earned:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 30px rgba(40, 167, 69, 0.3);
+}
+
+/* Kazanılmamış Rozetler - Siyah Beyaz */
+.badge-card.not-earned {
+    filter: grayscale(100%);
+    opacity: 0.6;
+    background: rgba(108, 117, 125, 0.1);
+    border-color: rgba(108, 117, 125, 0.2);
+}
+
+.badge-card.not-earned:hover {
+    filter: grayscale(70%);
+    opacity: 0.8;
+    transform: translateY(-2px);
+}
+
+/* Rozet İkonu */
+.badge-icon {
+    position: relative;
+}
+
+.badge-image {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 50%;
+}
+
+.emoji-icon {
+    font-size: 4rem;
+    line-height: 1;
+}
+
+/* Seviye Göstergeleri */
+.tier-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.tier-bronze { background: linear-gradient(45deg, #CD7F32, #DEB887); color: white; }
+.tier-silver { background: linear-gradient(45deg, #C0C0C0, #E5E5E5); color: #333; }
+.tier-gold { background: linear-gradient(45deg, #FFD700, #FFA500); color: #333; }
+
+/* Rozet Adı */
+.badge-name {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.badge-card.not-earned .badge-name {
+    color: var(--text-secondary);
+}
+
+/* Açıklama */
+.badge-description {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+/* Durum Rozetleri */
+.status-badge {
+    padding: 6px 16px;
+    border-radius: 25px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-badge.earned {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    color: white;
+}
+
+.status-badge.not-earned {
+    background: rgba(108, 117, 125, 0.2);
+    color: var(--text-secondary);
+    border: 1px solid rgba(108, 117, 125, 0.3);
+}
+
+/* Kategori renkleri */
+.badge-card.tier-bronze.earned { border-color: rgba(205, 127, 50, 0.4); }
+.badge-card.tier-silver.earned { border-color: rgba(192, 192, 192, 0.4); }
+.badge-card.tier-gold.earned { border-color: rgba(255, 215, 0, 0.4); }
+
+/* Gereksinimler */
+.requirements {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+/* Gradient metin */
+.text-gradient {
+    background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+</style>
+{% endblock %} 

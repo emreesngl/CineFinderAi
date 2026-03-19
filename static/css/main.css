@@ -1,0 +1,193 @@
+/* Temel stiller */
+:root {
+    --primary-color: #ff5722;
+    --secondary-color: #ff9800;
+    --background-color: #121212;
+    --card-bg: #1e1e1e;
+    --text-color: #ffffff;
+    --text-secondary: #b3b3b3;
+    --gradient-start: #ff5722;
+    --gradient-end: #ff9800;
+}
+
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+.container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Navbar */
+.navbar {
+    background-color: rgba(18, 18, 18, 0.9);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logo-text {
+    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-weight: 700;
+}
+
+/* Huly.io benzeri film kartları */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+}
+
+.movie-card {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+    position: relative;
+}
+
+.movie-card:hover {
+    transform: translateY(-8px);
+}
+
+.movie-card img {
+    width: 100%;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    display: block;
+}
+
+.movie-card-info {
+    padding: 12px;
+}
+
+/* Hero alanı */
+.hero {
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.9));
+    background-size: cover;
+    background-position: center;
+    padding: 8rem 0 4rem;
+    text-align: center;
+}
+
+/* Arama kutusu */
+.search-box {
+    max-width: 600px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.search-input {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background-color: rgba(30, 30, 30, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50px;
+    color: white;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    background-color: rgba(40, 40, 40, 0.9);
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+.search-button {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.search-button:hover {
+    transform: translateY(-50%) scale(1.05);
+}
+
+/* Media Detay Sayfası */
+.media-detail {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.poster-container {
+    position: sticky;
+    top: 120px;
+}
+
+.poster-container img {
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+}
+
+.media-info h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.meta-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+    color: var(--text-secondary);
+}
+
+.overview {
+    line-height: 1.7;
+    margin-bottom: 30px;
+}
+
+.tag {
+    display: inline-block;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .media-detail {
+        grid-template-columns: 1fr;
+    }
+    
+    .poster-container {
+        position: relative;
+        top: 0;
+        max-width: 300px;
+        margin: 0 auto;
+    }
+    
+    .card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+} 

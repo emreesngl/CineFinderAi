@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Mesajlar - {{ other_user.username }}{% endblock %}
+
+{% block extra_css %}
+{# Temel konuşma stilleri (burada veya base CSS'de olabilir) #}
+<style>
+    .conversation-container {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 100px); /* Navbar vb. hesaba katılarak yükseklik ayarı */
+        background-color: #1c1c1c; /* Koyu arka plan */
+        border-radius: 8px;
+        overflow: hidden; /* İçerik taşmasını engelle */
+        border: 1px solid #333;
+    }
+    .conversation-header {
+        background-color: #252525; /* Header arkaplanı */
+        border-bottom: 1px solid #333;
+        flex-shrink: 0; /* Header küçülmesin */
+    }
+    .messages {
+        /* background-color: #1c1c1c; */ /* Ana arkaplanla aynı */
+        flex-grow: 1;
+        overflow-y: auto; /* Mesajlar için kaydırma */
+        padding: 15px;
+    }
+    .message {
+        display: flex;
+        margin-bottom: 15px;
+        max-width: 75%;
+    }
+    .user-message {
+        margin-left: auto; /* Kullanıcı mesajlarını sağa yasla */
+        flex-direction: row-reverse; /* Zaman damgası vb. için */
+    }
+    .other-message {
+        margin-right: auto; /* Diğer kullanıcı mesajları solda */
+    }
+    .message-bubble {
+        padding: 10px 15px;
+        border-radius: 18px;
+        word-wrap: break-word;
+        background-color: #3a3a3a; /* Diğer kullanıcı bubble */
+        color: #eee;
+    }
+    .user-message .message-bubble {
+        background-color: #007bff; /* Kullanıcı bubble */
+        color: white;
+        border-top-right-radius: 5px; /* Hafif köşe farkı */
+    }
+     .other-message .message-bubble {
+        border-top-left-radius: 5px; /* Hafif köşe farkı */
+    }
+
+    .message-input-area {
+        background-color: #252525;
+        border-top: 1px solid #333;
+        flex-shrink: 0; /* Input alanı küçülmesin */
+    }
+    .message-input-field {
+        background-color: #3a3a3a;
+        color: #eee;
+        border: 1px solid #555;
+        resize: none; /* Yeniden boyutlandırmayı engelle */
+        border-radius: 20px; /* Daha yuvarlak input */
+        padding: 8px 15px;
+    }
+    .message-input-field::placeholder {
+        color: #8a8a8a; /* Placeholder rengi ayarlandı */
+        opacity: 1; /* Firefox için */
+    }
+    .message-input-field:focus {
+        background-color: #444;
+        color: #fff;
+        border-color: #007bff;
+        box-shadow: none;
+    }
+    .send-message-btn {
+         border-radius: 50%; /* Yuvarlak buton */
+         width: 40px;
+         height: 40px;
+         padding: 0;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {# Gelen Kutusuna Dön linki kaldırıldı #}
+    <div class="conversation-container">
+        {# İçerik normalde _conversation_content.html'den gelecek #}
+        {% include 'includes/_conversation_content.html' %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // CSRF token almak için (base.html'den geliyor ama burada da tanımlayalım)
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Textarea boyutunu ayarlar
+    function handleTextareaResize(textarea) {
+        if (!textarea) return;
+        textarea.style.height = 'auto'; // Önce sıfırla
+        const newHeight = Math.max(40, textarea.scrollHeight); // Min yükseklik 40px
+        textarea.style.height = newHeight + 'px';
+        console.log(`[Resize-Conv] Textarea height set to: ${newHeight}px`);
+    }
+
+    // Mesajları en alta kaydırır
+    function scrollToMessagesBottom(container) {
+        if(container) {
+            const scrollHeight = container.scrollHeight;
+            console.log(`[Scroll-Conv] Attempting to scroll. scrollHeight: ${scrollHeight}`);
+            requestAnimationFrame(() => {
+                container.scrollTop = scrollHeight;
+                console.log(`[Scroll-Conv] Scrolled. New scrollTop: ${container.scrollTop}`);
+            });
+        } else {
+            console.warn("[Scroll-Conv] Container not found for scrolling.");
+        }
+    }
+    
+    // Mesajı UI'a ekler (AJAX yanıtı beklenmeden)
+    function addMessageToUI(container, text, isUser) {
+        if (!container) return;
+        console.log(`[UI-Conv] Adding message: "${text}", isUser: ${isUser}`);
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', isUser ? 'user-message' : 'other-message');
+        
+        const bubble = document.createElement('div');
+        bubble.classList.add('message-bubble');
+        bubble.innerText = text; 
+
+        messageDiv.appendChild(bubble);
+        container.appendChild(messageDiv);
+        scrollToMessagesBottom(container); // Mesaj eklenince kaydır
+    }
+    
+    // Genel AJAX yanıt işleyici
+    function handleResponse(response) {
+         if (!response.ok) {
+             return response.text().then(text => { 
+                 let errorMessage = `HTTP error! Status: ${response.status}`;
+                 try {
+                    const err = JSON.parse(text); 
+                    errorMessage = err.message || err.error || JSON.stringify(err) || errorMessage;
+                 } catch (e) {
+                    errorMessage = text || errorMessage;
+                 }
+                 throw new Error(errorMessage);
+             });
+            }
+            return response.json(); 
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const messageForm = document.getElementById('message-form');
+        const messageInput = document.querySelector('.message-input-field');
+        const messagesContainer = document.querySelector('.messages');
+        const csrftoken = getCookie('csrftoken'); // CSRF token'ı al
+
+        // 1. İlk Yükleme Scroll ve Boyutlandırma
+        if(messagesContainer) {
+           setTimeout(() => scrollToMessagesBottom(messagesContainer), 100); // Biraz gecikme
+        }
+        if (messageInput) {
+             handleTextareaResize(messageInput); // Başlangıç boyutunu ayarla
+             // Input olayı - Otomatik boyutlandırma
+             messageInput.addEventListener('input', function() {
+                handleTextareaResize(this);
+             });
+             // Keydown olayı - Enter/Shift+Enter
+            messageInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault(); 
+                     if (messageForm && messageInput.value.trim() !== '') {
+                         console.log("[Keydown-Conv] Enter pressed, submitting form.");
+                         messageForm.requestSubmit(); // Formu gönder
+                     } else {
+                         console.log("[Keydown-Conv] Enter pressed but input empty or no form.");
+                     }
+                 }
+             });
+        }
+        
+        // 2. Form Gönderme (AJAX)
+        if (messageForm && messageInput && messagesContainer && csrftoken) {
+            messageForm.addEventListener('submit', function(event) {
+                event.preventDefault(); 
+                const text = messageInput.value.trim();
+                const url = messageForm.action;
+
+                if (!text) return;
+
+                console.log(`[Send-Conv] Sending message: "${text}" to URL: ${url}`);
+                addMessageToUI(messagesContainer, text, true); // Önce UI'a ekle
+                const currentInputValue = text; // Input temizlenmeden önceki değeri sakla
+                messageInput.value = ''; // Input'u temizle
+                handleTextareaResize(messageInput); // Input boyutunu sıfırla
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: `text=${encodeURIComponent(currentInputValue)}` // Saklanan değeri gönder
+                })
+                .then(response => handleResponse(response))
+                .then(data => {
+                    console.log("[Send-Conv] Response data:", data);
+                    if (!data.success) { 
+                        console.error('[Send-Conv] Message send failed (server):', data.errors);
+                        if(window.toastr) toastr.error('Mesaj gönderilemedi: ' + (data.errors ? JSON.stringify(data.errors) : 'Sunucu hatası'));
+                        // Başarısız mesajı input'a geri koy
+                        messageInput.value = currentInputValue;
+                        handleTextareaResize(messageInput);
+                    } else {
+                        console.log('[Send-Conv] Message sent successfully (server acknowledged).');
+                        // İlk mesaj sonrası yönlendirme (burada da çalışmalı)
+                        if (data.redirect_url) {
+                            console.log('[Send-Conv] Redirect URL received:', data.redirect_url);
+                            window.location.href = data.redirect_url;
+                        } 
+                    }
+                })
+                .catch(error => {
+                    console.error('[Send-Conv] Fetch error:', error);
+                    if(window.toastr) toastr.error(error.message || 'Mesaj gönderilirken bir ağ hatası oluştu.');
+                    // Başarısız mesajı input'a geri koy
+                    messageInput.value = currentInputValue;
+                    handleTextareaResize(messageInput);
+                });
+            });
+            console.log("[Init-Conv] Form submit listener attached.");
+        } else {
+            console.warn("[Init-Conv] Could not attach form submit listener (missing elements or CSRF token).");
+            if (!csrftoken) console.error("[Init-Conv] CSRF Token not found!");
+        }
+    });
+</script>
+{% endblock %} 

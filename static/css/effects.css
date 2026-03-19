@@ -1,0 +1,224 @@
+/* Görsel Efektler CSS */
+
+/* Metin Gölgesi */
+.text-shadow-lg {
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Arka Plan Işık Hüzmesi - Bu sınıf kaldırıldı */
+/* .arka-plan { ... } */
+
+/* Işık hüzmesi genel stili (search_results'ta kullanılacak) */
+.isik-huzmesi {
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0) 100%);
+  transform: rotate(35deg);
+  filter: blur(30px);
+  animation: isikAnimasyon 8s infinite ease-in-out;
+}
+
+@keyframes isikAnimasyon {
+  0%, 100% { transform: rotate(35deg) translateY(0); opacity: 0.5; }
+  50% { transform: rotate(30deg) translateY(-10%); opacity: 0.7; }
+}
+
+/* Parlak Kenarlar ve Bulutsu Efektler - Huly.io Stili */
+.panel {
+  position: relative;
+  background: rgba(12, 15, 40, 0.5); /* Çok daha koyu ve yarı şeffaf */
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+/* Koyu modda panel arka planı - kaldırıldı, tema uyumu body'den gelecek */
+/* .dark .panel { ... } */
+
+/* Parlak çerçeve */
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: 1rem;
+  background: linear-gradient(
+    225deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.1) 30%,
+    rgba(255, 255, 255, 0.05) 60%,
+    rgba(255, 255, 255, 0.2) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Panel hover efekti */
+.panel:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 30px -10px rgba(2, 6, 23, 0.5), 0 0 10px rgba(79, 70, 229, 0.1);
+}
+
+/* Popüler film/dizi kartları için özel stil */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.movie-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  aspect-ratio: 2/3;
+  transition: all 0.3s ease;
+}
+
+.movie-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.movie-card:hover img {
+  transform: scale(1.05);
+}
+
+/* Kart üzerindeki bilgi overlay */
+.movie-card-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1rem;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+  color: white;
+  transform: translateY(20%);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.movie-card:hover .movie-card-info {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* CSS ile Gradyan Animasyonları */
+.hareketli-gradyan {
+  /* Huly.io benzeri daha koyu gradyan */
+  background: linear-gradient(
+    -60deg, 
+    #050718, /* Çok koyu lacivert */
+    #0d1229, /* Koyu indigo */
+    #1a1b46, /* Biraz daha açık */
+    #050718
+  );
+  background-size: 300% 300%;
+  animation: gradyanHareket 25s ease infinite;
+  position: relative; /* İç içe geçmiş efektler için */
+}
+
+/* Mesh Gradient - WebGL olmadan CSS ile yakın bir efekt */
+.mesh-gradient {
+  background: radial-gradient(
+    circle at 10% 20%, 
+    rgba(120, 68, 188, 0.13) 0%, 
+    rgba(0, 0, 0, 0) 30%
+  ), radial-gradient(
+    circle at 90% 5%, 
+    rgba(41, 23, 155, 0.13) 0%, 
+    rgba(0, 0, 0, 0) 35%
+  ), radial-gradient(
+    circle at 60% 80%, 
+    rgba(79, 70, 229, 0.13) 0%, 
+    rgba(0, 0, 0, 0) 40%
+  );
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* Pırıltı Efekti */
+.glimmer {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border-radius: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  filter: blur(15px);
+  animation: glimmer 8s infinite ease-in-out;
+  transform-origin: center;
+  pointer-events: none;
+}
+
+@keyframes glimmer {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+@keyframes gradyanHareket {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Dikey Işık Hüzmesi (Huly.io stili) - Daha Belirgin */
+.central-light-beam {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50%; /* Genişletildi */
+  max-width: 600px; /* Maksimum genişlik arttırıldı */
+  height: 90%; /* Uzatıldı */
+  background: linear-gradient(
+    to top,
+    rgba(165, 180, 252, 0.5) 0%, /* indigo-300 gibi daha parlak başlangıç */
+    rgba(129, 140, 248, 0.3) 30%, /* indigo-400 */
+    rgba(79, 70, 229, 0.1) 60%,  /* primary */
+    rgba(55, 48, 163, 0) 95% /* Şeffaflığa daha keskin geçiş */
+  );
+  filter: blur(60px); /* Blur arttırıldı */
+  border-radius: 60% 60% 0 0 / 100% 100% 0 0; /* Daha da kavisli */
+  opacity: 0.8; /* Biraz daha görünür */
+  animation: centralBeamPulse 12s infinite ease-in-out; /* Daha yavaş pulse */
+  pointer-events: none; /* Üzerindeki tıklamaları engelle */
+}
+
+@keyframes centralBeamPulse {
+  0%, 100% { opacity: 0.7; transform: translateX(-50%) scaleY(1); }
+  50% { opacity: 0.9; transform: translateX(-50%) scaleY(1.08); }
+}
+
+/* Ekstra Parlaklık ve Derinlik (Nebula Efekti) */
+.parlak-efekt {
+  position: fixed; /* Fareyi takip etmesi için fixed */
+  width: 300px; /* Büyütüldü */
+  height: 300px; /* Büyütüldü */
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(165, 180, 252, 0.3) 0%, rgba(79, 70, 229, 0.1) 40%, rgba(55, 48, 163, 0) 75%); /* Daha renkli ve yayvan */
+  filter: blur(50px); /* Blur ayarlandı */
+  opacity: 0.6; /* Opaklık ayarlandı */
+  mix-blend-mode: screen; /* Ekran modu kalabilir veya normal */
+  pointer-events: none; /* Tıklamaları engelle */
+  z-index: -1; /* Diğer içeriklerin altında kalsın */
+  transition: transform 0.1s linear, opacity 0.2s ease-out; /* Yumuşak takip */
+}
+
+/* Kaydırma ile Görünme Efekti */
+.scroll-hidden {
+  opacity: 0;
+  transform: translateY(50px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.scroll-visible {
+  opacity: 1;
+  transform: translateY(0);
+} 

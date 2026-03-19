@@ -1,0 +1,571 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Sohbetler{% endblock %}
+
+{% block extra_css %}
+<style>
+    .inbox-container {
+        display: flex;
+        height: calc(100vh - 70px); /* Navbar yüksekliği (~70px) çıkarıldı */
+        overflow: hidden; /* Prevent overall page scroll */
+        border: 1px solid #333;
+        border-radius: 8px;
+        background-color: #1e1e1e; /* Darker background */
+        /* margin-top: 1.5rem; mt-4 kaldırıldığı için gerekirse buraya margin eklenebilir */
+    }
+
+    .conversation-list {
+        width: 300px; /* Fixed width for the list */
+        border-right: 1px solid #333;
+        display: flex;
+        flex-direction: column;
+        background-color: #252525; /* Slightly lighter list background */
+    }
+    
+    .conversation-list-header {
+        padding: 15px;
+        border-bottom: 1px solid #333;
+        font-weight: bold;
+        color: #eee;
+        flex-shrink: 0; /* Header küçülmesin */
+    }
+
+    .conversations {
+        overflow-y: auto; /* Enable scrolling for conversations */
+        flex-grow: 1; /* Take remaining height */
+}
+
+    .conversation-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #3a3a3a;
+        transition: background-color 0.2s ease;
+        position: relative; /* Silme butonu için */
+    }
+
+    .conversation-item:hover {
+        background-color: #333;
+    }
+    
+    .conversation-item.active {
+        background-color: #007bff; /* Active conversation highlight */
+        color: white;
+}
+    .conversation-item.active .conversation-time,
+    .conversation-item.active .conversation-last-message {
+        color: #eee; /* Lighter text for active item meta */
+    }
+
+    .conv-profile-pic img {
+    width: 40px;
+    height: 40px;
+        border-radius: 50%;
+        margin-right: 12px;
+        object-fit: cover;
+    }
+
+    .conversation-details {
+        flex-grow: 1;
+        overflow: hidden; /* Prevent text overflow */
+    }
+
+    .conversation-user {
+        font-weight: bold;
+        margin-bottom: 3px;
+        white-space: nowrap;
+    overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .conversation-last-message {
+        font-size: 0.85em;
+        color: #aaa;
+    white-space: nowrap;
+        overflow: hidden;
+    text-overflow: ellipsis;
+        display: flex; /* For unread count */
+        align-items: center;
+    }
+    
+    .conversation-last-message .unread-badge {
+        background-color: #e50914; /* Red badge */
+        color: white;
+        font-size: 0.7em;
+        padding: 2px 5px;
+        border-radius: 10px;
+        margin-left: 5px;
+    font-weight: bold;
+}
+
+    .conversation-time {
+        font-size: 0.75em;
+        color: #888;
+        margin-left: 10px;
+        flex-shrink: 0; /* Prevent time from shrinking */
+    }
+
+    /* --- SAĞ TARAF STİLLERİ --- */
+    .conversation-content-area {
+        flex-grow: 1; /* Take remaining width */
+        display: flex;
+        flex-direction: column; /* Dikey hizalama */
+        height: 100%; 
+        overflow: hidden; /* İçerik taşmasını engelle */
+    }
+
+    .conversation-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #aaa;
+        text-align: center;
+    }
+    .conversation-placeholder i {
+        font-size: 4rem; /* Larger icon */
+        margin-bottom: 20px;
+        color: #555;
+    }
+    
+    /* AJAX ile yüklenen içeriğin container'ı */
+    #conversation-detail-container {
+        display: flex; /* Flex container yap */
+        flex-direction: column; /* İçeriği dikey sırala */
+        flex-grow: 1; /* Kalan tüm alanı kapla */
+        overflow: hidden; /* Kendi içinde scroll olmasın */
+        height: 100%; /* Yüksekliği %100 */
+    }
+    
+    /* _conversation_content.html içindeki elemanlar için stiller */
+    #conversation-detail-container .conversation-header {
+        background-color: #252525;
+        border-bottom: 1px solid #333;
+        flex-shrink: 0; /* Header sabit kalsın */
+    }
+    #conversation-detail-container .messages {
+        flex-grow: 1; /* Mesaj alanı kalan tüm yüksekliği alsın */
+        overflow-y: auto; /* Sadece mesaj alanı scroll olsun */
+        padding: 15px;
+        background-color: #1c1c1c;
+    }
+    /* Mesaj stilleri (message, user-message, other-message, message-bubble vb.) */
+    .message { display: flex; margin-bottom: 15px; max-width: 75%; }
+    .user-message { margin-left: auto; flex-direction: row-reverse; }
+    .other-message { margin-right: auto; }
+    .message-bubble { padding: 10px 15px; border-radius: 18px; word-wrap: break-word; background-color: #3a3a3a; color: #eee; }
+    .user-message .message-bubble { background-color: #007bff; color: white; border-top-right-radius: 5px; }
+    .other-message .message-bubble { border-top-left-radius: 5px; }
+    
+    #conversation-detail-container .message-input-area {
+        background-color: #252525;
+        border-top: 1px solid #333;
+        flex-shrink: 0; /* Input alanı sabit kalsın */
+    }
+    #conversation-detail-container .message-input-field {
+        background-color: #3a3a3a;
+        color: #eee;
+        border: 1px solid #555;
+        resize: none;
+        border-radius: 20px;
+        padding: 8px 15px;
+        overflow-y: auto; /* Gerektiğinde dikey scrollbar göster */
+        max-height: 150px; /* Çok uzamasını engellemek için maksimum yükseklik (isteğe bağlı) */
+}
+    #conversation-detail-container .message-input-field::placeholder {
+        color: #8a8a8a;
+        opacity: 1;
+    }
+    #conversation-detail-container .message-input-field:focus {
+        background-color: #444;
+        color: #fff;
+        border-color: #007bff;
+        box-shadow: none;
+    }
+    #conversation-detail-container .send-message-btn {
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+}
+
+    .delete-conv-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: none;
+        border: none;
+        color: #888; /* Silik renk */
+        cursor: pointer;
+        padding: 3px 5px;
+        font-size: 0.8em;
+        line-height: 1;
+        display: none; /* Normalde gizli */
+        z-index: 2; /* Diğer öğelerin üzerinde */
+    }
+    .conversation-item:hover .delete-conv-btn {
+        display: block; /* Hover'da göster */
+    }
+    .delete-conv-btn:hover {
+        color: #e50914; /* Hover'da kırmızı */
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="inbox-container">
+        <!-- Sol Sütun: Konuşma Listesi -->
+        <div class="conversation-list">
+             <div class="conversation-list-header">Sohbetler</div>
+             <div class="conversations" id="conversation-items-container">
+                 {% for conv_data in conversations %}
+                     <div class="conversation-item" data-username="{{ conv_data.user.username }}" data-url="{% url 'conversation' conv_data.user.username %}">
+                        <button class="delete-conv-btn" title="Konuşmayı Sil" 
+                                data-username="{{ conv_data.user.username }}" 
+                                data-url="{% url 'delete_message_conversation' username=conv_data.user.username %}">
+                            <i class="fas fa-times"></i> {# Çarpı ikonu #}
+                        </button>
+                         <div class="conv-profile-pic">
+                              {# View'dan gelen profile_pic_url kullanıldı #}
+                              <img src="{{ conv_data.profile_pic_url }}" alt="{{ conv_data.user.username }} avatar">
+                         </div>
+                         <div class="conversation-details">
+                             <div class="conversation-user">{{ conv_data.user.username }}</div>
+                             <div class="conversation-last-message">
+                                 {% if conv_data.last_message %}
+                                     {% if conv_data.last_message.sender == request.user %}Siz: {% endif %}
+                                     {{ conv_data.last_message.text|truncatechars:30 }}
+                    {% else %}
+                                     Henüz mesaj yok
+                    {% endif %}
+                                 {% if conv_data.unread_count > 0 %}
+                                     <span class="unread-badge">{{ conv_data.unread_count }}</span>
+                            {% endif %}
+                        </div>
+                         </div>
+                         {% if conv_data.last_message %}
+                         <div class="conversation-time">
+                             {{ conv_data.last_message.sent_at|naturaltime }}
+                         </div>
+                            {% endif %}
+                     </div>
+                 {% empty %}
+                     <p class="text-center text-muted p-3">Hiç konuşmanız yok.</p>
+                 {% endfor %}
+                    </div>
+                </div>
+
+        <!-- Sağ Sütun: Konuşma İçeriği -->
+        <div class="conversation-content-area" id="conversation-content-area">
+             {# Başlangıçta placeholder veya yüklenen içerik #}
+            <div id="conversation-detail-container">
+                 <div class="conversation-placeholder">
+                     <i class="fas fa-comments"></i>
+                     <p>Bir sohbet seçin veya yeni bir mesaj gönderin.</p>
+                 </div>
+             </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const conversationItemsContainer = document.getElementById('conversation-items-container');
+    const detailContainer = document.getElementById('conversation-detail-container');
+    const contentArea = document.getElementById('conversation-content-area');
+    const placeholder = contentArea.querySelector('.conversation-placeholder');
+    const csrftoken = getCookie('csrftoken'); 
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const userToOpen = urlParams.get('user');
+    if (userToOpen) {
+        console.log(`[Inbox] URL parameter found, attempting to load chat for: ${userToOpen}`);
+        const conversationItem = conversationItemsContainer.querySelector(`.conversation-item[data-username="${userToOpen}"]`);
+        if (conversationItem) {
+            loadConversation(conversationItem.dataset.url, conversationItem);
+        } else {
+            console.warn(`[Inbox] Conversation item for ${userToOpen} not found in the list.`);
+        }
+    }
+
+    conversationItemsContainer.addEventListener('click', function(event) {
+        const deleteButton = event.target.closest('.delete-conv-btn');
+        const targetItem = event.target.closest('.conversation-item');
+
+            if (deleteButton) {
+            handleConversationDelete(deleteButton);
+        } else if (targetItem) {
+            loadConversation(targetItem.dataset.url, targetItem);
+        }
+    });
+
+    contentArea.addEventListener('submit', function(event) {
+        if (event.target.matches('#message-form')) {
+            handleMessageSend(event);
+        }
+    });
+
+    contentArea.addEventListener('keydown', function(event) {
+        if (event.target.matches('.message-input-field')) {
+            handleMessageInputKeydown(event);
+        }
+    });
+    
+    contentArea.addEventListener('input', function(event) {
+        if (event.target.matches('.message-input-field')) {
+            handleTextareaResize(event.target);
+        }
+    });
+
+});
+
+function loadConversation(url, targetItem) {
+    if (!url || !targetItem) return;
+    
+    console.log(`[Load] Loading conversation from: ${url}`);
+    const conversationItemsContainer = document.getElementById('conversation-items-container');
+    const detailContainer = document.getElementById('conversation-detail-container');
+    const placeholder = document.querySelector('#conversation-content-area .conversation-placeholder'); 
+
+    conversationItemsContainer.querySelectorAll('.conversation-item.active').forEach(item => {
+        item.classList.remove('active');
+    });
+    targetItem.classList.add('active');
+
+    detailContainer.innerHTML = '<div class="d-flex justify-content-center align-items-center h-100"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Yükleniyor...</span></div></div>';
+    if (placeholder) placeholder.style.display = 'none';
+
+    fetch(url, {
+        method: 'GET',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.text(); 
+    })
+    .then(html => {
+        console.log("[Load] Conversation HTML received.");
+        detailContainer.innerHTML = html;
+        const messagesContainer = detailContainer.querySelector('.messages');
+        const messageInput = detailContainer.querySelector('.message-input-field');
+        if (messagesContainer) {
+             setTimeout(() => scrollToMessagesBottom(messagesContainer), 150);
+        }
+        if (messageInput) {
+            handleTextareaResize(messageInput); 
+        }
+        console.log("[Load] Initial scroll and resize triggered.");
+    })
+    .catch(error => {
+        console.error("[Load] Konuşma yüklenirken hata:", error);
+        detailContainer.innerHTML = '<div class="alert alert-danger m-3">Konuşma yüklenirken bir hata oluştu. Lütfen tekrar deneyin.</div>';
+    });
+}
+
+function handleConversationDelete(deleteButton) {
+                const username = deleteButton.dataset.username;
+                const url = deleteButton.dataset.url;
+    const conversationItem = deleteButton.closest('.conversation-item');
+    const csrftoken = getCookie('csrftoken');
+
+    if (!username || !url || !conversationItem || !csrftoken) {
+        console.error("[Delete] Missing data or CSRF token.");
+        return;
+    }
+
+    if (confirm(`'${username}' ile olan konuşmayı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`)) {
+        console.log(`[Delete] Deleting conversation with ${username}... URL: ${url}`);
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrftoken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+        .then(response => handleResponse(response))
+                    .then(data => {
+            console.log("[Delete] Response data:", data);
+                        if (data.status === 'success' || data.status === 'info') {
+                animateRemoveItem(conversationItem);
+                if(window.toastr) toastr.success(data.message);
+                if (conversationItem.classList.contains('active')) {
+                    const detailContainer = document.getElementById('conversation-detail-container');
+                    const placeholderHTML = '<div class="conversation-placeholder"><i class="fas fa-comments"></i><p>Bir sohbet seçin veya yeni bir mesaj gönderin.</p></div>';
+                    detailContainer.innerHTML = placeholderHTML;
+                }
+                        } else {
+                console.error("[Delete] Failed:", data.message);
+                if(window.toastr) toastr.error(data.message || 'Konuşma silinirken bir hata oluştu.');
+                        }
+                    })
+                    .catch(error => {
+            console.error("[Delete] Fetch error:", error);
+            if(window.toastr) toastr.error(error.message || 'Konuşma silinirken bir sunucu hatası oluştu.');
+                    });
+                }
+            }
+
+function animateRemoveItem(item) {
+    const container = item.parentNode;
+    item.style.transition = 'opacity 0.3s ease, height 0.3s ease, margin 0.3s ease, padding 0.3s ease';
+    item.style.opacity = '0';
+    item.style.height = '0';
+    item.style.paddingTop = '0';
+    item.style.paddingBottom = '0';
+    item.style.marginTop = '0';
+    item.style.marginBottom = '0';
+    setTimeout(() => {
+        item.remove();
+        if (container && container.children.length === 0) {
+             container.innerHTML = '<p class="text-center text-muted p-3">Hiç konuşmanız yok.</p>';
+        }
+    }, 300);
+    }
+
+function handleMessageSend(event) {
+    event.preventDefault();
+    const messageForm = event.target;
+    const messageInput = messageForm.querySelector('.message-input-field');
+    const messagesContainer = document.querySelector('#conversation-detail-container .messages'); 
+    const text = messageInput.value.trim();
+    const url = messageForm.action;
+    const csrfToken = messageForm.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    if (!text || !messagesContainer || !csrfToken) { 
+        console.error("[Send] Missing text, messages container, or CSRF token."); 
+        return; 
+    }
+
+    console.log(`[Send] Sending message: "${text}" to URL: ${url}`);
+    addMessageToUI(messagesContainer, text, true);
+    messageInput.value = '';
+    handleTextareaResize(messageInput);
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfToken
+        },
+        body: `text=${encodeURIComponent(text)}`
+    })
+    .then(response => handleResponse(response))
+    .then(data => {
+        console.log("[Send] Response data:", data);
+        if (!data.success) { 
+            console.error('[Send] Message send failed (server):', data.errors);
+            if(window.toastr) toastr.error('Mesaj gönderilemedi: ' + (data.errors ? JSON.stringify(data.errors) : 'Sunucu hatası'));
+            messageInput.value = text;
+            handleTextareaResize(messageInput);
+        } else {
+            console.log('[Send] Message sent successfully (server acknowledged).');
+            if (data.redirect_url) {
+                console.log('[Send] Redirect URL received:', data.redirect_url);
+                window.location.href = data.redirect_url;
+            } 
+        }
+    })
+    .catch(error => {
+        console.error('[Send] Fetch error:', error);
+        if(window.toastr) toastr.error(error.message || 'Mesaj gönderilirken bir ağ hatası oluştu.');
+        messageInput.value = text;
+        handleTextareaResize(messageInput);
+    });
+}
+
+function handleMessageInputKeydown(event) {
+    const messageInput = event.target;
+    const messageForm = messageInput.closest('form');
+
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        if (messageForm && messageInput.value.trim() !== '') {
+             console.log("[Keydown] Enter pressed, submitting form.");
+             messageForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        } else {
+             console.log("[Keydown] Enter pressed but input is empty or no form found.");
+        }
+    }
+}
+
+function handleTextareaResize(textarea) {
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    const newHeight = Math.max(40, textarea.scrollHeight);
+    textarea.style.height = newHeight + 'px';
+    console.log(`[Resize] Textarea height set to: ${newHeight}px`);
+}
+
+function addMessageToUI(container, text, isUser) {
+    if (!container) return;
+    console.log(`[UI] Adding message: "${text}", isUser: ${isUser}`);
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message', isUser ? 'user-message' : 'other-message');
+    
+    const bubble = document.createElement('div');
+    bubble.classList.add('message-bubble');
+    bubble.innerText = text;
+
+    messageDiv.appendChild(bubble);
+    container.appendChild(messageDiv);
+    scrollToMessagesBottom(container);
+}
+
+function scrollToMessagesBottom(container) {
+    if(container) {
+        const scrollHeight = container.scrollHeight;
+        console.log(`[Scroll] Attempting to scroll. scrollHeight: ${scrollHeight}`);
+        requestAnimationFrame(() => {
+            container.scrollTop = scrollHeight;
+            console.log(`[Scroll] Scrolled. New scrollTop: ${container.scrollTop}`);
+        });
+    } else {
+        console.warn("[Scroll] Container not found for scrolling.");
+    }
+}
+
+function handleResponse(response) {
+     if (!response.ok) {
+         return response.text().then(text => { 
+             let errorMessage = `HTTP error! Status: ${response.status}`;
+             try {
+                const err = JSON.parse(text); 
+                errorMessage = err.message || err.error || JSON.stringify(err) || errorMessage;
+             } catch (e) {
+                errorMessage = text || errorMessage;
+             }
+             throw new Error(errorMessage);
+         });
+    }
+    return response.json(); 
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+</script>
+{% endblock %} 

@@ -1,0 +1,803 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Filmbot Sohbet{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/chat.css' %}">
+<style>
+    /* Chat container başlangıçta gizli olmayacak */
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    /* Yeni chat başlatma animasyonu */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .ai-welcome-message {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    
+    /* Mesaj stilleri */
+    .message {
+        display: flex;
+        margin-bottom: 15px;
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    .user-message {
+        justify-content: flex-end;
+    }
+    
+    .ai-message {
+        justify-content: flex-start;
+    }
+    
+    .message-bubble {
+        padding: 10px 15px;
+        border-radius: 18px;
+        max-width: 80%;
+        word-wrap: break-word;
+    }
+    
+    .user-bubble {
+        background-color: #0084ff;
+        color: white;
+        border-top-right-radius: 3px;
+    }
+    
+    .ai-bubble {
+        background-color: #f0f0f0;
+        color: #333;
+        border-top-left-radius: 3px;
+    }
+
+    /* Yeni Sohbet butonuna üstten boşluk ekle */
+    .chat-sidebar .sidebar-header .new-chat-button {
+        margin-top: 10px; /* Veya uygun bir değer */
+    }
+
+    /* Sidebar Stil Güncellemeleri */
+    .chat-history {
+        overflow-y: auto;
+        flex-grow: 1; /* Kalan alanı doldur */
+        padding-bottom: 10px;
+    }
+
+    .conversation-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #333; /* Ayrım çizgisi */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background-color 0.2s ease;
+    }
+
+    .conversation-item:hover {
+        background-color: #3a3a3a;
+    }
+
+    .conversation-item.active {
+        background-color: #0084ff;
+        color: white;
+        font-weight: bold;
+    }
+
+    .conversation-title {
+        flex-grow: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-right: 10px;
+    }
+
+    .conversation-actions button {
+        background: none;
+        border: none;
+        color: #aaa;
+        cursor: pointer;
+        padding: 2px 4px;
+        margin-left: 5px;
+        font-size: 0.8em;
+        display: none; /* Başlangıçta gizli */
+    }
+
+    .conversation-item:hover .conversation-actions button {
+        display: inline-block; /* Hover olduğunda göster */
+    }
+    
+    .conversation-actions button:hover {
+        color: white;
+    }
+
+    /* Öneri Afişleri Stilleri */
+    .recommendation-posters {
+        margin-top: 15px;
+        margin-bottom: 5px; 
+        display: flex;
+        overflow-x: auto; 
+        padding: 5px 0 15px 0; /* Alt ve üst padding */
+        gap: 15px; /* Afişler arası boşluk artırıldı */
+        justify-content: flex-start; /* Başlangıçta sola yaslı */
+        /* Eğer kartlar ekrana sığıyorsa ortalamak için:
+           justify-content: center; 
+        */
+        /* Scrollbar stilini iyileştir (opsiyonel, tarayıcıya göre değişir) */
+        scrollbar-width: thin;
+        scrollbar-color: #555 #333;
+    }
+
+    .poster-card {
+        flex-shrink: 0; 
+        width: 130px; /* Afiş genişliği artırıldı */
+        background-color: #282828; /* Biraz daha açık */
+        border-radius: 8px; /* Daha yuvarlak */
+        overflow: hidden;
+        text-decoration: none;
+        color: #eee;
+        font-size: 0.8em;
+        transition: transform 0.2s ease;
+    }
+    
+    .poster-card:hover {
+        transform: translateY(-3px);
+    }
+
+    .poster-card img {
+        width: 100%;
+        height: auto; /* Oranı koru */
+        aspect-ratio: 2 / 3; /* Poster oranı */
+        object-fit: cover;
+        display: block;
+    }
+
+    .poster-card .poster-title {
+        padding: 5px;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Login Modal Stilleri */
+    .modal-backdrop.show {
+        opacity: 0.8; /* Daha koyu arka plan */
+    }
+    .modal-content {
+        background-color: #2c2c2c; /* Koyu tema */
+        color: #eee;
+        border: 1px solid #444;
+        border-radius: 10px;
+    }
+    .modal-header {
+        border-bottom: 1px solid #444;
+    }
+    .modal-title {
+        color: #e50914; /* Netflix kırmızısı */
+    }
+    .btn-close {
+        filter: invert(1) grayscale(100%) brightness(200%); /* Beyaz kapatma butonu */
+    }
+    .modal-body {
+        padding: 2rem;
+    }
+    .modal-footer {
+        border-top: 1px solid #444;
+        justify-content: center; /* Butonları ortala */
+    }
+    .modal-footer .btn-primary {
+        background-color: #e50914;
+        border-color: #e50914;
+    }
+     .modal-footer .btn-primary:hover {
+        background-color: #b20710;
+        border-color: #b20710;
+    }
+    .modal-footer .btn-secondary {
+        background-color: #555;
+        border-color: #555;
+    }
+    .modal-footer .btn-secondary:hover {
+        background-color: #444;
+        border-color: #444;
+    }
+
+    /* Typewriter efekti için cursor animasyonu */
+    @keyframes blink {
+        0%, 50% { opacity: 1; }
+        51%, 100% { opacity: 0; }
+    }
+    
+    .typewriter-cursor {
+        color: #666;
+        font-weight: normal;
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-page">
+    <!-- Sohbet Geçmişi Sidebar -->
+    <div class="chat-sidebar">
+        <div class="sidebar-header">
+            <button class="new-chat-button" id="new-chat-btn" {% if needs_login %}disabled title="Giriş yapmalısınız"{% endif %}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                <span>Yeni Sohbet</span>
+            </button>
+            <button class="sidebar-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="chat-history" id="chat-history-list">
+            <!-- Geçmiş konuşmalar Django template'inden yüklenecek -->
+            {% for conv in conversations %}
+                <div class="conversation-item" data-conversation-id="{{ conv.id }}">
+                    <span class="conversation-title">{{ conv.title }}</span>
+                    <div class="conversation-actions">
+                         <button class="rename-btn" title="Yeniden Adlandır">✏️</button>
+                         <button class="delete-btn" title="Sil">🗑️</button>
+                    </div>
+                </div>
+            {% empty %}
+                <p style="padding: 15px; color: #aaa; text-align: center;">
+                    {% if needs_login %}
+                        Sohbet geçmişini görmek ve yeni sohbet başlatmak için giriş yapmalısınız.
+                    {% else %}
+                        Henüz sohbet geçmişiniz yok.
+                    {% endif %}
+                </p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Ana Sohbet Alanı -->
+    <div class="chat-main">
+        <div class="chat-container">
+            <div class="message-container" id="message-container">
+                <!-- Mesajlar buraya yüklenecek -->
+                <div class="message ai-message ai-welcome-message"> 
+                    <div class="message-bubble ai-bubble">
+                        Merhaba! Ben Filmbot, film ve diziler hakkında size yardımcı olmak için buradayım. Ne konuda yardımcı olabilirim?
+                    </div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" style="display: none;">
+                <div class="dot"></div> <div class="dot"></div> <div class="dot"></div>
+            </div>
+
+            <div class="input-area">
+                <form id="chat-form" class="chat-form">
+                    {% csrf_token %}
+                    <div class="input-container">
+                        <textarea id="message-input" class="message-input" placeholder="{% if needs_login %}Sohbet etmek için giriş yapın...{% else %}Bir mesaj gönderin...{% endif %}" rows="1" {% if needs_login %}disabled{% endif %}></textarea>
+                        <button type="submit" class="send-button" {% if needs_login %}disabled{% endif %}>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Login Modal -->
+<div class="modal fade" id="loginRequiredModal" tabindex="-1" aria-labelledby="loginRequiredModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="loginRequiredModalLabel">Giriş Gerekli</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Filmbot ile sohbet edebilmek için lütfen giriş yapın veya kaydolun.
+      </div>
+      <div class="modal-footer">
+        <a href="{% url 'login' %}" class="btn btn-primary">Giriş Yap</a>
+        <a href="{% url 'signup' %}" class="btn btn-secondary">Kaydol</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageContainer = document.getElementById('message-container');
+    const messageInput = document.getElementById('message-input');
+    const chatForm = document.getElementById('chat-form');
+    const typingIndicator = document.querySelector('.typing-indicator');
+    const chatHistoryList = document.getElementById('chat-history-list');
+    const newChatBtn = document.getElementById('new-chat-btn');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value; // Null check
+    const needsLogin = {{ needs_login|yesno:"true,false" }};
+    const loginModalElement = document.getElementById('loginRequiredModal');
+    let loginModal = null;
+    if (loginModalElement) {
+        loginModal = new bootstrap.Modal(loginModalElement);
+    }
+
+    let currentConversationId = null; // Aktif konuşma ID'si
+
+    // --- GİRİŞ GEREKLİ KONTROLÜ ---
+    if (needsLogin) {
+        console.log("Kullanıcı giriş yapmamış, modal gösterilecek.");
+        // Input ve butonları devre dışı bırak (HTML'de zaten yapıldı ama JS ile de garanti)
+        messageInput.disabled = true;
+        chatForm.querySelector('.send-button').disabled = true;
+        newChatBtn.disabled = true;
+        
+        // Geçmiş konuşma öğelerini tıklanamaz yap (varsa)
+        document.querySelectorAll('.conversation-item').forEach(item => {
+            item.style.cursor = 'not-allowed';
+            item.onclick = (e) => e.stopPropagation(); // Tıklamayı engelle
+        });
+        
+        // 0.5 saniye sonra modalı göster
+        setTimeout(() => {
+             if (loginModal) {
+                 loginModal.show();
+             } else {
+                 alert("Sohbet etmek için lütfen giriş yapın."); // Fallback
+             }
+        }, 500); 
+    }
+
+    // --- Yardımcı Fonksiyonlar ---
+    function getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    }
+
+    function addMessage(sender, content) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender === 'user' ? 'user-message' : 'ai-message'}`;
+        const bubbleClass = sender === 'user' ? 'user-bubble' : 'ai-bubble';
+        
+        // Metni güvenli hale getir (Basit text node oluşturma)
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = `message-bubble ${bubbleClass}`;
+        bubbleDiv.textContent = content; // textContent kullanarak XSS önlemi
+        
+        messageDiv.appendChild(bubbleDiv);
+        messageContainer.appendChild(messageDiv);
+        scrollToBottom();
+    }
+
+    function addHTMLMessage(sender, htmlContent) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender === 'user' ? 'user-message' : 'ai-message'}`;
+        const bubbleClass = sender === 'user' ? 'user-bubble' : 'ai-bubble';
+        
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = `message-bubble ${bubbleClass} html-content`;
+        bubbleDiv.innerHTML = htmlContent;
+        
+        messageDiv.appendChild(bubbleDiv);
+        messageContainer.appendChild(messageDiv);
+        scrollToBottom();
+    }
+
+    function showTypingIndicator() {
+        typingIndicator.style.display = 'flex';
+        scrollToBottom();
+    }
+
+    function hideTypingIndicator() {
+        typingIndicator.style.display = 'none';
+    }
+
+    function scrollToBottom() {
+        // Kısa bir gecikme ekleyerek DOM'un güncellenmesini bekle
+        setTimeout(() => {
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+        }, 50); 
+    }
+
+    function clearMessages() {
+        messageContainer.innerHTML = '';
+    }
+    
+    function addWelcomeMessage() {
+        // İlk mesajı HTML olarak ekleyelim (varsa)
+        const firstMessage = messageContainer.querySelector('.ai-welcome-message');
+        if (!firstMessage) { // Eğer yoksa ekle
+             const welcomeHtml = 
+             `<div class="message ai-message ai-welcome-message">
+                <div class="message-bubble ai-bubble">
+                     Merhaba! Ben Filmbot, film ve diziler hakkında size yardımcı olmak için buradayım. Ne konuda yardımcı olabilirim?
+                </div>
+             </div>`;
+             messageContainer.innerHTML += welcomeHtml;
+        }
+    }
+
+    // --- Konuşma Yönetimi (Güncellendi) ---
+    function loadConversation(conversationId) {
+        if (needsLogin || currentConversationId === conversationId) return; // Giriş yapmadıysa veya aynıysa işlem yapma
+
+        currentConversationId = conversationId;
+        clearMessages();
+        showTypingIndicator();
+        updateSidebarActiveState();
+
+        fetch(`/chatbot/conversation/${conversationId}/`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Mesajlar yüklenemedi.');
+            return response.json();
+        })
+        .then(data => {
+            hideTypingIndicator();
+            if (data.messages && data.messages.length > 0) {
+                data.messages.forEach(msg => {
+                    // Marked.js ile formatlama
+                    if (typeof marked !== 'undefined') {
+                        const formattedHtml = marked.parse(msg.text);
+                        addHTMLMessage(msg.sender_is_user ? 'user' : 'ai', formattedHtml);
+                    } else {
+                    addMessage(msg.sender_is_user ? 'user' : 'ai', msg.text);
+                    }
+                });
+            } else {
+                 addWelcomeMessage(); // Boş konuşma için karşılama
+            }
+            scrollToBottom();
+        })
+        .catch(error => {
+            console.error('Konuşma yükleme hatası:', error);
+            hideTypingIndicator();
+            addMessage('ai', 'Üzgünüm, konuşma yüklenirken bir hata oluştu.');
+        });
+    }
+
+    function updateSidebarActiveState() {
+        document.querySelectorAll('.conversation-item').forEach(item => {
+            if (item.dataset.conversationId == currentConversationId) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+
+    function addNewConversationToSidebar(id, title) {
+        // "Geçmiş yok" mesajını kaldır (varsa)
+        const noHistoryP = chatHistoryList.querySelector('p');
+        if (noHistoryP) noHistoryP.remove();
+        
+        const newItem = document.createElement('div');
+        newItem.className = 'conversation-item';
+        newItem.dataset.conversationId = id;
+        newItem.innerHTML = `
+            <span class="conversation-title">${escapeHtml(title)}</span> <!-- Güvenlik için escape -->
+            <div class="conversation-actions">
+                 <button class="rename-btn" title="Yeniden Adlandır">✏️</button>
+                 <button class="delete-btn" title="Sil">🗑️</button>
+            </div>
+        `;
+        chatHistoryList.prepend(newItem); // Yeni konuşmayı en üste ekle
+        addEventListenersToItem(newItem); // Yeni öğeye de listener ekle
+        return newItem;
+    }
+    
+    // HTML'i güvenli hale getirme fonksiyonu (basit)
+    function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe
+             .replace(/&/g, "&amp;")
+             .replace(/</g, "&lt;")
+             .replace(/>/g, "&gt;")
+             .replace(/"/g, "&quot;")
+             .replace(/'/g, "&#039;");
+    }
+
+    // --- Mesaj Gönderme (Streaming) ---
+    function sendMessage() {
+        if (needsLogin) return; // Giriş yapmadıysa gönderme
+        
+        const message = messageInput.value.trim();
+        if (!message) return;
+        
+        // Kullanıcı mesajını ekle
+        addMessage('user', message);
+        messageInput.value = '';
+        messageInput.style.height = 'auto'; // Textarea boyutunu sıfırla
+        showTypingIndicator();
+        
+        // AI mesajı için boş bubble oluştur
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message ai-message';
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = 'message-bubble ai-bubble html-content';
+        messageDiv.appendChild(bubbleDiv);
+        messageContainer.appendChild(messageDiv);
+        
+        let aiMessageContent = '';
+        let isWriting = false; // Yazma durumunu takip et
+        let writeQueue = []; // Yazılacak karakterlerin kuyruğu
+        
+        // Harf harf yazma fonksiyonu
+        function typeWriter() {
+            if (writeQueue.length > 0 && !isWriting) {
+                isWriting = true;
+                const char = writeQueue.shift();
+                aiMessageContent += char;
+                bubbleDiv.textContent = aiMessageContent;
+                scrollToBottom();
+                
+                // Karakter tipine göre gecikme süresi
+                let delay = 30; // Normal hız
+                if (char === '.' || char === '!' || char === '?') {
+                    delay = 200; // Noktalama sonrası uzun bekleme
+                } else if (char === ',' || char === ';') {
+                    delay = 100; // Virgül sonrası orta bekleme
+                } else if (char === ' ') {
+                    delay = 50; // Boşluk sonrası kısa bekleme
+                } else if (char === '\n') {
+                    delay = 150; // Satır sonu sonrası orta bekleme
+                }
+                
+                setTimeout(() => {
+                    isWriting = false;
+                    typeWriter(); // Bir sonraki karakteri yaz
+                }, delay);
+            }
+        }
+        
+        // Chunk'ları kuyruğa ekle
+        function addToQueue(text) {
+            for (let char of text) {
+                writeQueue.push(char);
+            }
+            // Eğer yazma işlemi durmuşsa başlat
+            if (!isWriting) {
+                typeWriter();
+            }
+        }
+        
+        fetch('/chatbot/stream/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({ 
+                message: message,
+                conversation_id: currentConversationId 
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            hideTypingIndicator();
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            
+            function readStream() {
+                return reader.read().then(({ done, value }) => {
+                    if (done) {
+                        // Stream bitti, kalan karakterleri yazdıktan sonra markdown formatını uygula
+                        const checkQueue = () => {
+                            if (writeQueue.length === 0 && !isWriting) {
+                                // Tüm karakterler yazıldı, markdown formatını uygula
+                                if (typeof marked !== 'undefined') {
+                                    bubbleDiv.innerHTML = marked.parse(aiMessageContent);
+                                } else {
+                                    bubbleDiv.textContent = aiMessageContent;
+                                }
+                                scrollToBottom();
+                            } else {
+                                // Henüz yazılmayan karakterler var, tekrar kontrol et
+                                setTimeout(checkQueue, 100);
+                            }
+                        };
+                        checkQueue();
+                        return;
+                    }
+                    
+                    // Chunk'ı decode et
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.substring(6));
+                                
+                                if (data.type === 'start') {
+                                    if (data.is_new && data.conversation_id) {
+                                        currentConversationId = data.conversation_id;
+                                    }
+                                } else if (data.type === 'chunk') {
+                                    // Chunk'ı harf harf yazma kuyruğuna ekle
+                                    addToQueue(data.text);
+                                } else if (data.type === 'end') {
+                                    if (data.conversation_title && !document.querySelector(`[data-conversation-id="${currentConversationId}"]`)) {
+                                        const newItem = addNewConversationToSidebar(currentConversationId, data.conversation_title);
+                                        document.querySelectorAll('.conversation-item').forEach(item => item.classList.remove('active'));
+                                        newItem.classList.add('active');
+                                    }
+                                } else if (data.type === 'error') {
+                                    bubbleDiv.textContent = `Hata: ${data.message}`;
+                                }
+                            } catch (e) {
+                                console.error('JSON parse error:', e);
+                            }
+                        }
+                    }
+                    
+                    return readStream();
+                });
+            }
+            
+            return readStream();
+        })
+        .catch(error => {
+            console.error('Streaming hatası:', error);
+            hideTypingIndicator();
+            bubbleDiv.textContent = `Bir hata oluştu: ${error.message}`;
+        });
+    }
+    
+    // --- Konuşma Silme ve Yeniden Adlandırma ---
+    function handleDeleteConversation(e) {
+        if (needsLogin) return;
+        const item = e.target.closest('.conversation-item');
+        const id = item.dataset.conversationId;
+        if (!confirm(`'${item.querySelector('.conversation-title').textContent}' başlıklı sohbeti silmek istediğinizden emin misiniz?`)) return;
+
+        fetch(`/chatbot/conversation/${id}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+             if (!response.ok) throw new Error('Silme işlemi başarısız.');
+             return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                item.remove();
+                if (currentConversationId == id) {
+                    startNewChat(); 
+                }
+                if (chatHistoryList.children.length === 0) {
+                   const noHistoryP = document.createElement('p');
+                   noHistoryP.style.padding = '15px';
+                   noHistoryP.style.color = '#aaa';
+                   noHistoryP.style.textAlign = 'center';
+                   noHistoryP.textContent = 'Henüz sohbet geçmişiniz yok.';
+                   chatHistoryList.appendChild(noHistoryP);
+                }
+            } else {
+                alert(data.error || 'Konuşma silinirken bir hata oluştu.');
+            }
+        })
+        .catch(error => {
+            console.error('Silme hatası:', error);
+            alert('Konuşma silinirken bir hata oluştu.');
+        });
+    }
+
+    function handleRenameConversation(e) {
+        if (needsLogin) return;
+        const item = e.target.closest('.conversation-item');
+        const id = item.dataset.conversationId;
+        const titleSpan = item.querySelector('.conversation-title');
+        const currentTitle = titleSpan.textContent;
+        const newTitle = prompt('Yeni sohbet başlığını girin:', currentTitle);
+
+        if (newTitle && newTitle.trim() !== '' && newTitle !== currentTitle) {
+            fetch(`/chatbot/conversation/${id}/rename/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ new_title: newTitle.trim() })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Yeniden adlandırma işlemi başarısız.');
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    titleSpan.textContent = escapeHtml(data.new_title); // Güvenlik
+                } else {
+                    alert(data.error || 'Konuşma yeniden adlandırılırken bir hata oluştu.');
+                }
+            })
+            .catch(error => {
+                 console.error('Yeniden adlandırma hatası:', error);
+                 alert('Konuşma yeniden adlandırılırken bir hata oluştu.');
+            });
+        }
+    }
+
+    // --- Yeni Sohbet --- 
+    function startNewChat() {
+         if (needsLogin) return;
+         currentConversationId = null;
+         clearMessages();
+         addWelcomeMessage();
+         updateSidebarActiveState(); // Hiçbirini aktif yapma
+    }
+
+    // --- Olay Dinleyicileri ---
+    function addEventListenersToItem(item) {
+        // Konuşmayı yükle
+        item.addEventListener('click', (e) => {
+            if (needsLogin) return; // Giriş yapmadıysa yükleme
+            // Butonlara tıklanmadıysa yükle
+            if (!e.target.closest('.conversation-actions button')) {
+                loadConversation(item.dataset.conversationId);
+            }
+        });
+        // Sil butonu
+        const deleteBtn = item.querySelector('.delete-btn');
+        if (deleteBtn) deleteBtn.addEventListener('click', handleDeleteConversation);
+        // Yeniden adlandır butonu
+        const renameBtn = item.querySelector('.rename-btn');
+        if (renameBtn) renameBtn.addEventListener('click', handleRenameConversation);
+    }
+
+    // Başlangıçta var olan konuşmalara listener ekle
+    document.querySelectorAll('.conversation-item').forEach(addEventListenersToItem);
+
+    // Yeni Sohbet butonu
+    if (newChatBtn) {
+    newChatBtn.addEventListener('click', startNewChat);
+    }
+
+    // Mesaj gönderme (Enter ve Buton)
+    if (messageInput && !needsLogin) { // Sadece giriş yapıldıysa etkinleştir
+    messageInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    }
+    if (chatForm && !needsLogin) { // Sadece giriş yapıldıysa etkinleştir
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendMessage();
+    });
+    }
+    
+    // Textarea otomatik boyutlandırma
+    if (messageInput) {
+    messageInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+            // scrollHeight bazen 0 olabiliyor, min yükseklik ekleyelim
+            this.style.height = Math.max(38, this.scrollHeight) + 'px'; 
+    });
+    }
+
+});
+</script>
+{% endblock scripts %} 

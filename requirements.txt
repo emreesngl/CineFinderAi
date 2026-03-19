@@ -1,0 +1,14 @@
+Django>=4.0,<5.0
+requests
+python-dotenv
+google-generativeai
+Pillow
+django-crispy-forms
+crispy-bootstrap5 
+markdown
+whitenoise
+django-widget-tweaks 
+psycopg2-binary==2.9.9
+supabase==2.3.4
+dj-database-url==2.1.0
+django-allauth==0.57.0 

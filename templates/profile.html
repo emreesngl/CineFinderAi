@@ -1,0 +1,416 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ profile_user.username }} Profili{% endblock %}
+
+{% block extra_css %}
+<style>
+#user-search-input::placeholder {
+    color: rgba(255, 255, 255, 0.7) !important;
+    opacity: 1 !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row profile-section">
+    <div class="col-md-3 text-center">
+        {% if profile_user.profile_picture %}
+            <img src="{{ profile_user.profile_picture.url }}" class="img-thumbnail rounded-circle mb-3 bg-dark border-secondary" alt="{{ profile_user.username }} profil resmi" width="150" height="150">
+        {% else %}
+            {# Varsayılan profil resmi #}
+            <svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" fill="currentColor" class="bi bi-person-circle text-secondary mb-3" viewBox="0 0 16 16">
+              <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+              <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>
+            </svg>
+        {% endif %}
+        <h4 class="text-white">{{ profile_user.username }}</h4>
+        <p class="text-gray-400">Seviye: {{ profile_user.level }} | Puan: {{ profile_user.points }}</p>
+
+        {# Kazanılan Rozetler #}
+        <div class="mb-3">
+           <h6 class="text-white mb-2">
+                Rozetler <a href="{% url 'badges_list' %}" class="text-white text-decoration-none"><i class="fas fa-external-link-alt fa-xs ms-1"></i></a>
+           </h6>
+           {% for badge in profile_user.badges.all|slice:":5" %} {# İlk 5 rozeti göster #}
+               {% if badge.is_active %}
+               <span class="badge m-1" title="{{ badge.description|default:badge.name }}"
+                     style="background: linear-gradient(45deg, 
+                        {% if badge.tier == 'bronze' %}#CD7F32, #DEB887{% elif badge.tier == 'silver' %}#C0C0C0, #E5E5E5{% elif badge.tier == 'gold' %}#FFD700, #FFA500{% else %}#6c757d, #adb5bd{% endif %}); 
+                        color: {% if badge.tier == 'silver' or badge.tier == 'gold' %}#333{% else %}white{% endif %}; 
+                        border: 1px solid rgba(255, 255, 255, 0.3);">
+                   {% if badge.icon %}
+                      <img src="{{ badge.icon.url }}" alt="{{ badge.name }}" style="width: 1em; height: 1em; vertical-align: -0.125em; margin-right: 0.2em;">
+                   {% else %}
+                      {% if badge.tier == 'bronze' %}🥉{% elif badge.tier == 'silver' %}🥈{% elif badge.tier == 'gold' %}🥇{% else %}🏅{% endif %}
+                   {% endif %}
+                   {{ badge.name }}
+               </span>
+               {% endif %}
+           {% empty %}
+               <small class="text-gray-400">Henüz rozet kazanılmadı.</small>
+           {% endfor %}
+
+       </div>
+
+        {# Takipçi/Takip Edilen Sayıları #}
+        <div class="d-flex justify-content-around mb-3 text-center">
+            <div>
+                <a href="{% url 'followers_list' username=profile_user.username %}" class="text-decoration-none text-reset">
+                    <strong class="text-white"><span id="follower-count">{{ followers_count }}</span></strong>
+                    <small class="text-gray-400 d-block">Takipçi</small>
+                </a>
+            </div>
+            <div>
+                <a href="{% url 'following_list' username=profile_user.username %}" class="text-decoration-none text-reset">
+                    <strong class="text-white">{{ following_count }}</strong>
+                    <small class="text-gray-400 d-block">Takip</small>
+                </a>
+            </div>
+        </div>
+
+        {# Takip/Düzenle/Arama Butonları #}
+        {% if user.is_authenticated and user != profile_user %}
+            <div class="d-grid gap-2 mb-3">
+                {# Takip Et/Bırak Butonu #}
+                <button class="btn {% if is_following %}btn-outline-secondary{% else %}btn-primary{% endif %} btn-sm" id="follow-toggle-btn" data-user-id="{{ profile_user.id }}">
+                    {% if is_following %}
+                        <i class="fas fa-user-minus me-1"></i> Takipten Çık
+                    {% else %}
+                        <i class="fas fa-user-plus me-1"></i> Takip Et
+                    {% endif %}
+                </button>
+                {# Mesaj Gönder Butonu #}
+                <a href="{% url 'conversation' username=profile_user.username %}" class="btn btn-outline-info btn-sm">
+                    <i class="fas fa-envelope me-1"></i> Mesaj Gönder
+                </a>
+            </div>
+        {% elif user.is_authenticated and user == profile_user %}
+             <div class="d-grid gap-2 mb-3">
+                 <a href="{% url 'profile_edit' %}" class="btn btn-outline-secondary btn-sm">Profili Düzenle</a>
+             </div>
+             <form id="user-search-form" class="mb-3">
+                <div class="input-group input-group-sm">
+                    <input type="text" id="user-search-input" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Kullanıcı adı ara...">
+                    <button class="btn btn-outline-primary" type="submit" id="user-search-button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div id="user-search-error" class="text-danger small mt-1" style="display: none;"></div> 
+            </form>
+        {% endif %}
+
+    </div>
+    <div class="col-md-9">
+        <h5 class="text-white">Hakkında</h5>
+        <p class="text-gray-300">{{ profile_user.bio|default:"-" }}</p>
+        <hr class="border-secondary">
+        <p><strong class="text-white">Ad Soyad:</strong> <span class="text-gray-300">{{ profile_user.get_full_name|default:"-" }}</span></p>
+        <p><strong class="text-white">Katılma Tarihi:</strong> <span class="text-gray-300">{{ profile_user.date_joined|date:"d F Y" }}</span></p>
+
+        {% if user.is_authenticated and user == profile_user %}
+            <p><a href="{% url 'logout' %}" class="text-danger">Çıkış Yap</a></p>
+        {% endif %}
+
+        <hr class="border-secondary">
+        
+        <!-- Listeler için Tab Yapısı (Rozetler Tab'ı Kaldırıldı) -->
+        <ul class="nav nav-tabs mb-4" id="profileTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="favorite-tab" data-bs-toggle="tab" data-bs-target="#favorite" type="button" role="tab">
+                    <i class="fas fa-heart me-1"></i> Favoriler <span class="badge bg-danger">{{ favorite_list.count|default:"0" }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="watchlist-tab" data-bs-toggle="tab" data-bs-target="#watchlist" type="button" role="tab">
+                    <i class="fas fa-bookmark me-1"></i> İzlenecekler <span class="badge bg-info">{{ watchlist_list.count|default:"0" }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="followlist-tab" data-bs-toggle="tab" data-bs-target="#followlist" type="button" role="tab">
+                    <i class="fas fa-bell me-1"></i> Takip Listesi <span class="badge bg-success">{{ follow_list.count|default:"0" }}</span>
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="profileTabsContent">
+            <!-- Favoriler Tab -->
+            <div class="tab-pane fade show active" id="favorite" role="tabpanel" aria-labelledby="favorite-tab">
+                 {# include kullanımı kaldırıldı, eski yapı geri getirildi #}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="text-white">Favoriler</h4>
+                    {% if favorite_list and favorite_list.count > 10 %}
+                    <a class="btn btn-sm btn-outline-danger" href="#" role="button">
+                        Tümünü Göster ({{ favorite_list.count }})
+                    </a>
+                    {% endif %}
+                </div>
+                 {% if favorite_list %}
+                     <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3">
+                         {% for item in favorite_list|slice:":10" %}
+                             <div class="col">
+                                 <div class="card h-100 bg-dark border-secondary">
+                                     <a href="{% url 'media_detail' media_type=item.media.media_type media_id=item.media.tmdb_id %}">
+                                         {% if item.computed_poster_url %}
+                                             <img src="{{ item.computed_poster_url }}" class="card-img-top" alt="{{ item.media.title|default:'Poster' }}" loading="lazy">
+                                         {% else %}
+                                             <div class="placeholder-image d-flex align-items-center justify-content-center h-100 bg-dark text-secondary p-3" style="min-height: 150px;">
+                                                 <i class="fas fa-film fa-3x"></i>
+                                             </div>
+                                         {% endif %}
+                                     </a>
+                                     <div class="card-body p-2 bg-dark">
+                                         <h6 class="card-title mb-0 small">
+                                             <a href="{% url 'media_detail' media_type=item.media.media_type media_id=item.media.tmdb_id %}" class="text-white">
+                                                 {{ item.media.title|default:"Başlık Yok"|truncatechars:35 }}
+                                             </a>
+                                         </h6>
+                                         <small class="text-gray-400">{{ item.media.get_media_type_display }}</small>
+                                     </div>
+                                 </div>
+                             </div>
+                         {% endfor %}
+                     </div>
+                 {% else %}
+                     <p class="text-gray-400">Bu liste henüz boş.</p>
+                 {% endif %}
+            </div>
+            
+            <!-- İzlenecekler Tab -->
+            <div class="tab-pane fade" id="watchlist" role="tabpanel" aria-labelledby="watchlist-tab">
+                 {# include kullanımı kaldırıldı, eski yapı geri getirildi #}
+                 <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="text-white">İzlenecekler</h4>
+                    {% if watchlist_list and watchlist_list.count > 10 %}
+                    <a class="btn btn-sm btn-outline-info" href="#" role="button">
+                        Tümünü Göster ({{ watchlist_list.count }})
+                    </a>
+                    {% endif %}
+                </div>
+                 {% if watchlist_list %}
+                     <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3">
+                         {% for item in watchlist_list|slice:":10" %}
+                             <div class="col">
+                                 <div class="card h-100 bg-dark border-secondary">
+                                     <a href="{% url 'media_detail' media_type=item.media.media_type media_id=item.media.tmdb_id %}">
+                                         {% if item.computed_poster_url %}
+                                             <img src="{{ item.computed_poster_url }}" class="card-img-top" alt="{{ item.media.title|default:'Poster' }}" loading="lazy">
+                                         {% else %}
+                                             <div class="placeholder-image d-flex align-items-center justify-content-center h-100 bg-dark text-secondary p-3" style="min-height: 150px;">
+                                                 <i class="fas fa-film fa-3x"></i>
+                                             </div>
+                                         {% endif %}
+                                     </a>
+                                     <div class="card-body p-2 bg-dark">
+                                         <h6 class="card-title mb-0 small">
+                                             <a href="{% url 'media_detail' media_type=item.media.media_type media_id=item.media.tmdb_id %}" class="text-white">
+                                                 {{ item.media.title|default:"Başlık Yok"|truncatechars:35 }}
+                                             </a>
+                                         </h6>
+                                         <small class="text-gray-400">{{ item.media.get_media_type_display }}</small>
+                                     </div>
+                                 </div>
+                             </div>
+                         {% endfor %}
+                     </div>
+                 {% else %}
+                     <p class="text-gray-400">Bu liste henüz boş.</p>
+                 {% endif %}
+            </div>
+            
+            <!-- Takip Listesi Tab -->
+            <div class="tab-pane fade" id="followlist" role="tabpanel" aria-labelledby="followlist-tab">
+                 {# include kullanımı kaldırıldı, eski yapı geri getirildi #}
+                 <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="text-white">Takip Listesi</h4>
+                    {% if follow_list and follow_list.count > 10 %}
+                    <a class="btn btn-sm btn-outline-success" href="#" role="button">
+                        Tümünü Göster ({{ follow_list.count }})
+                    </a>
+                    {% endif %}
+                </div>
+                 {% if follow_list %}
+                     <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3">
+                         {% for item in follow_list|slice:":10" %}
+                             <div class="col">
+                                 <div class="card h-100 bg-dark border-secondary">
+                                     <a href="{% url 'media_detail' media_type=item.media.media_type media_id=item.media.tmdb_id %}">
+                                         {% if item.computed_poster_url %}
+                                             <img src="{{ item.computed_poster_url }}" class="card-img-top" alt="{{ item.media.title|default:'Poster' }}" loading="lazy">
+                                         {% else %}
+                                             <div class="placeholder-image d-flex align-items-center justify-content-center h-100 bg-dark text-secondary p-3" style="min-height: 150px;">
+                                                 <i class="fas fa-film fa-3x"></i>
+                                             </div>
+                                         {% endif %}
+                                     </a>
+                                     <div class="card-body p-2 bg-dark">
+                                         <h6 class="card-title mb-0 small">
+                                             <a href="{% url 'media_detail' media_type=item.media.media_type media_id=item.media.tmdb_id %}" class="text-white">
+                                                 {{ item.media.title|default:"Başlık Yok"|truncatechars:35 }}
+                                             </a>
+                                         </h6>
+                                         <small class="text-gray-400">{{ item.media.get_media_type_display }}</small>
+                                     </div>
+                                 </div>
+                             </div>
+                         {% endfor %}
+                     </div>
+                 {% else %}
+                     <p class="text-gray-400">Bu liste henüz boş.</p>
+                 {% endif %}
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{# Kullanıcı arama ve takip etme scriptleri (profile.html'den kopyalandı) #}
+<script>
+    console.log('Profile scripts block executing...');
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Profile DOMContentLoaded fired.');
+        // Kullanıcı arama formu
+        const userSearchForm = document.getElementById('user-search-form');
+        const userSearchInput = document.getElementById('user-search-input');
+        const userSearchError = document.getElementById('user-search-error');
+
+        if (userSearchForm && userSearchInput && userSearchError) {
+            console.log("User search form listener attached."); // DEBUG
+            userSearchForm.addEventListener('submit', function(event) {
+                event.preventDefault(); // Formun normal gönderimini engelle
+                const usernameToSearch = userSearchInput.value.trim();
+                userSearchError.style.display = 'none'; // Önceki hatayı gizle
+                userSearchError.textContent = '';
+                console.log(`Checking username: ${usernameToSearch}`); // DEBUG
+                
+                if (usernameToSearch) {
+                    fetch(`/api/user/check/${encodeURIComponent(usernameToSearch)}/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log("User check response:", data); // DEBUG
+                            if (data.exists && data.profile_url) {
+                                console.log(`User found. Redirecting to: ${data.profile_url}`); // DEBUG
+                                window.location.href = data.profile_url;
+                            } else {
+                                console.log("User not found."); // DEBUG
+                                userSearchError.textContent = `"${usernameToSearch}" bulunamadı. Kullanıcı adı doğru mu acaba? 🤔`;
+                                userSearchError.style.display = 'block';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error checking user:', error);
+                            userSearchError.textContent = 'Kullanıcı kontrol edilirken bir hata oluştu.';
+                            userSearchError.style.display = 'block';
+                        });
+                } else {
+                    console.log("Search input is empty."); // DEBUG
+                    userSearchError.textContent = 'Lütfen bir kullanıcı adı girin.';
+                    userSearchError.style.display = 'block';
+                }
+            });
+        }
+        
+        // Takip et/bırak butonu
+        const toggleFollowBtn = document.getElementById('follow-toggle-btn');
+        const followerCountSpan = document.getElementById('follower-count');
+        const csrftoken = getCookie('csrftoken'); // CSRF token alma fonksiyonu (base.html'den geliyor)
+
+        console.log("Attempting to attach follow listener..."); // DEBUG
+        if (toggleFollowBtn) {
+            console.log("Follow button found. Attaching listener."); // DEBUG
+            toggleFollowBtn.addEventListener('click', function() {
+                console.log("Follow button clicked!"); // DEBUG
+                const userId = this.dataset.userId;
+                const isCurrentlyFollowing = this.classList.contains('btn-outline-secondary'); // Mevcut durumu kontrol et
+                console.log(`User ID: ${userId}, Currently Following: ${isCurrentlyFollowing}, CSRF Token: ${csrftoken}`);
+                
+                if (!csrftoken) {
+                    console.error("CSRF Token not found!");
+                    if (window.toastr) { toastr.error("Güvenlik anahtarı bulunamadı. Sayfayı yenileyip tekrar deneyin."); } 
+                    else { alert("Güvenlik anahtarı bulunamadı. Sayfayı yenileyip tekrar deneyin."); }
+                    return; // Token yoksa fetch yapma
+                }
+                
+                fetch("{% url 'toggle_follow' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: `user_id=${userId}`
+                })
+                .then(response => {
+                    console.log("Fetch response received:", response.status); // DEBUG
+                    return handleResponse(response); // handleResponse JSON'u parse eder veya hata fırlatır
+                })
+                .then(data => {
+                    console.log("Follow action response data:", data); // DEBUG
+                    if (data.status === 'success') {
+                        // Buton içeriğini ve stilini güncelle
+                        if (data.is_following) {
+                            this.innerHTML = `<i class="fas fa-user-minus me-1"></i> Takipten Çık`;
+                            this.classList.remove('btn-primary');
+                            this.classList.add('btn-outline-secondary');
+                        } else {
+                            this.innerHTML = `<i class="fas fa-user-plus me-1"></i> Takip Et`;
+                            this.classList.remove('btn-outline-secondary');
+                            this.classList.add('btn-primary');
+                        }
+
+                        // Takipçi sayısını güncelle
+                        if (followerCountSpan) {
+                            followerCountSpan.textContent = data.follower_count;
+                        }
+                        // Başarı mesajı
+                        if (window.toastr) { toastr.success(data.message || 'İşlem başarılı.'); }
+                        else { console.log(data.message || 'İşlem başarılı.'); }
+                    } else {
+                        // Backend'den gelen hata mesajını göster
+                        console.error('Follow action failed (server): ', data.message);
+                        if (window.toastr) {
+                             toastr.error(data.message || 'Bir hata oluştu.');
+                        } else {
+                            alert(data.message || 'Bir hata oluştu.');
+                        }
+                    }
+                })
+                .catch(error => {
+                    // Network hatası veya handleResponse'dan fırlatılan hata
+                    console.error('Follow Fetch Error:', error); 
+                     if (window.toastr) {
+                         toastr.error(error.message || 'Sunucuyla iletişim kurulamadı.'); // error.message kullan
+                     } else {
+                        alert(error.message || 'Sunucuyla iletişim kurulamadı.');
+                    }
+                });
+            });
+        } else {
+            console.log("Follow button NOT found."); // DEBUG
+        }
+
+        // HandleResponse base.html'e taşınabilir, şimdilik burada
+        function handleResponse(response) {
+            // Yanıtın OK olup olmadığını ve içeriğin JSON olup olmadığını kontrol et
+            if (!response.ok) {
+                 // Hata durumunda JSON gelmesini bekle ama gelmeyebilir de
+                 return response.text().then(text => { 
+                     try {
+                        const err = JSON.parse(text); 
+                        throw new Error(err.message || `HTTP error! Status: ${response.status}`);
+                     } catch (e) {
+                        // JSON parse edilemezse, ham metni hata olarak kullan
+                         throw new Error(text || `HTTP error! Status: ${response.status}`);
+                     }
+                 });
+            }
+            // Başarılı yanıtta JSON bekle
+            return response.json(); 
+        }
+
+    });
+</script>
+{% endblock %} 
