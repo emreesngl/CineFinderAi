@@ -92,15 +92,6 @@ Artık tarayıcınızdan `http://localhost:8000` adresine giderek platformu yere
 
 ---
 
-## 📸 Ekran Görüntüleri 
-*Bu kısmı projenizi Github'a yükledikten sonra, projenin arayüz fotoğraflarını direkt bu README dosyası içerisine sürükleyip bırakarak güncelleyebilirsiniz. Dışarıdan bakan birinin projeyi canlı görebilmesi için buraya arayüz resimleri yüklemeniz şiddetle tavsiye edilir.*
-
-<p float="left">
-  <img src="https://via.placeholder.com/400x250.png?text=Buras%C4%B1+%C4%B0%C3%A7in+Ana+Sayfa+%28Home%29+Foto%C4%9Fraf%C4%B1+Ekleyin" width="49%" />
-  <img src="https://via.placeholder.com/400x250.png?text=Filmbot+AI+Sohbet+K%C4%B1sm%C4%B1+Foto%C4%9Fraf%C4%B1" width="49%" /> 
-</p>
-
-
 ## 🤝 Katkıda Bulunma
 Katkılarınız bizim için her zaman çok önemli! Bu projeyi geliştirirken bir modül eklemek veya bir "bug" çözmek isterseniz:
 1. Bu projeyi kendi profilinizde **Fork**'layın.
